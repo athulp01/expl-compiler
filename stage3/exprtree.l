@@ -5,6 +5,7 @@
 	#include  "node.h"
 	int number;
 	char c;
+
 %}
 
 %%
@@ -24,10 +25,10 @@
 "begin" {return _BEGIN;}
 "read" {return _READ;}
 "write" {return _WRITE;}
+"func"	{return _Q;}
 
 %%
 
 int yywrap(void) {
 	return 1;
 }
-

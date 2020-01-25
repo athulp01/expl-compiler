@@ -4,16 +4,34 @@ reg_index registers[20];
 
 reg_index getReg() {
     for(reg_index i=0; i<20; i++)
-        if(!registers[i]) {
-            registers[i] = 1;
+        if(registers[i] == FREE) {
+            registers[i] = IN_USE;
             return i;
         }
 }
 
-void freeReg() {
+void freeReg(FILE *out) {
     for(reg_index i=19; i>=0; i--) 
-        if(registers[i]) {
-            registers[i] = 0;
+        if(registers[i] == IN_USE) {
+            registers[i] = FREE;
             return;
         }
+}
+
+void pushToStack(FILE *out) {
+    for(reg_index i=0; i<20; i++) {
+        if(registers[i] == IN_USE) {
+            sprintf(out, "PUSH R%d\n",i);
+            registers[i] = RESV;
+        }
+    }
+}
+
+void getFromStack(FILE *out) {
+    for(reg_index i=19; i>=0; i--) {
+        if(registers[i] == RESV) {
+            sprintf(out, "POP R%d\n",i);
+            registers[i] = IN_USE;
+        }
+    }  
 }

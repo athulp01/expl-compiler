@@ -49,33 +49,35 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    _NUM = 258,
-    _PLUS = 259,
-    _MINUS = 260,
-    _MUL = 261,
-    _DIV = 262,
-    _END = 263,
-    _BEGIN = 264,
-    _READ = 265,
-    _WRITE = 266,
-    _SEMI = 267,
-    _EQUALS = 268,
-    _ID = 269
+    _PLUS = 258,
+    _MINUS = 259,
+    _MUL = 260,
+    _DIV = 261,
+    _END = 262,
+    _BEGIN = 263,
+    _READ = 264,
+    _WRITE = 265,
+    _SEMI = 266,
+    _EQUALS = 267,
+    _Q = 268,
+    _ID = 269,
+    _NUM = 270
   };
 #endif
 /* Tokens.  */
-#define _NUM 258
-#define _PLUS 259
-#define _MINUS 260
-#define _MUL 261
-#define _DIV 262
-#define _END 263
-#define _BEGIN 264
-#define _READ 265
-#define _WRITE 266
-#define _SEMI 267
-#define _EQUALS 268
+#define _PLUS 258
+#define _MINUS 259
+#define _MUL 260
+#define _DIV 261
+#define _END 262
+#define _BEGIN 263
+#define _READ 264
+#define _WRITE 265
+#define _SEMI 266
+#define _EQUALS 267
+#define _Q 268
 #define _ID 269
+#define _NUM 270
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -86,7 +88,7 @@ union YYSTYPE
 	struct tnode *no;
 	
 
-#line 90 "y.tab.h"
+#line 92 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

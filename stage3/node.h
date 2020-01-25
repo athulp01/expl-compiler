@@ -1,6 +1,6 @@
 #pragma once
 
-enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN};
+enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN, Q};
 
 typedef union val {
     int num;
