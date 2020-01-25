@@ -1,6 +1,6 @@
 #include "register.h"
 
-reg_index registers[20];
+enum STATUS registers[20];
 
 reg_index getReg() {
     for(reg_index i=0; i<20; i++)
@@ -21,7 +21,7 @@ void freeReg(FILE *out) {
 void pushToStack(FILE *out) {
     for(reg_index i=0; i<20; i++) {
         if(registers[i] == IN_USE) {
-            sprintf(out, "PUSH R%d\n",i);
+            fprintf(out, "PUSH R%d\n",i);
             registers[i] = RESV;
         }
     }
@@ -30,7 +30,7 @@ void pushToStack(FILE *out) {
 void getFromStack(FILE *out) {
     for(reg_index i=19; i>=0; i--) {
         if(registers[i] == RESV) {
-            sprintf(out, "POP R%d\n",i);
+            fprintf(out, "POP R%d\n",i);
             registers[i] = IN_USE;
         }
     }  

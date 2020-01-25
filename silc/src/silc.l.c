@@ -1,5 +1,6 @@
+#line 1 "./src/silc.l.c"
 
-#line 2 "lex.yy.c"
+#line 3 "./src/silc.l.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -459,17 +460,17 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "exprtree.l"
-#line 2 "exprtree.l"
+#line 1 "./src/silc.l"
+#line 2 "./src/silc.l"
     #include <stdlib.h>
 	#include <stdio.h>
-	#include "y.tab.h"
+	#include "silc.h"
 	#include  "node.h"
 	int number;
 	char c;
 
-#line 471 "lex.yy.c"
-#line 472 "lex.yy.c"
+#line 472 "./src/silc.l.c"
+#line 473 "./src/silc.l.c"
 
 #define INITIAL 0
 
@@ -686,9 +687,9 @@ YY_DECL
 		}
 
 	{
-#line 11 "exprtree.l"
+#line 11 "./src/silc.l"
 
-#line 691 "lex.yy.c"
+#line 692 "./src/silc.l.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -747,86 +748,86 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 12 "exprtree.l"
+#line 12 "./src/silc.l"
 {number = atoi(yytext); yylval.no = createNode(NUM, '\0', number, NULL, NULL); return _NUM;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 13 "exprtree.l"
+#line 13 "./src/silc.l"
 {return _PLUS;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 14 "exprtree.l"
+#line 14 "./src/silc.l"
 {return _MINUS;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 15 "exprtree.l"
+#line 15 "./src/silc.l"
 {return _MUL;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 16 "exprtree.l"
+#line 16 "./src/silc.l"
 {return _DIV;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 17 "exprtree.l"
+#line 17 "./src/silc.l"
 {return _EQUALS;}
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 19 "exprtree.l"
+#line 19 "./src/silc.l"
 {}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 20 "exprtree.l"
+#line 20 "./src/silc.l"
 {return *yytext;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 21 "exprtree.l"
+#line 21 "./src/silc.l"
 {return _END;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 22 "exprtree.l"
+#line 22 "./src/silc.l"
 {c = yytext[0]; yylval.no = createNode(VAR, c, -1, NULL, NULL); return _ID;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 24 "exprtree.l"
+#line 24 "./src/silc.l"
 {return _SEMI;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 25 "exprtree.l"
+#line 25 "./src/silc.l"
 {return _BEGIN;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 26 "exprtree.l"
+#line 26 "./src/silc.l"
 {return _READ;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 27 "exprtree.l"
+#line 27 "./src/silc.l"
 {return _WRITE;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 28 "exprtree.l"
+#line 28 "./src/silc.l"
 {return _Q;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 30 "exprtree.l"
+#line 30 "./src/silc.l"
 ECHO;
 	YY_BREAK
-#line 829 "lex.yy.c"
+#line 830 "./src/silc.l.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1831,7 +1832,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 30 "exprtree.l"
+#line 30 "./src/silc.l"
 
 
 int yywrap(void) {

@@ -66,7 +66,7 @@
 
 
 /* First part of user prologue.  */
-#line 1 "exprtree.y"
+#line 1 "./src/silc.y"
 
 	#include <stdlib.h>
 	#include <stdio.h>
@@ -74,7 +74,7 @@
 	int yylex(void);
     FILE *out, *yyin;
 
-#line 78 "y.tab.c"
+#line 78 "./src/y.tab.c"
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus
@@ -98,8 +98,8 @@
 
 /* Use api.header.include to #include this header
    instead of duplicating it here.  */
-#ifndef YY_YY_Y_TAB_H_INCLUDED
-# define YY_YY_Y_TAB_H_INCLUDED
+#ifndef YY_YY_INCLUDE_SILC_H_INCLUDED
+# define YY_YY_INCLUDE_SILC_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -147,12 +147,12 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 9 "exprtree.y"
+#line 9 "./src/silc.y"
 
 	struct tnode *no;
 	
 
-#line 156 "y.tab.c"
+#line 156 "./src/y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -165,7 +165,7 @@ extern YYSTYPE yylval;
 
 int yyparse (void);
 
-#endif /* !YY_YY_Y_TAB_H_INCLUDED  */
+#endif /* !YY_YY_INCLUDE_SILC_H_INCLUDED  */
 
 
 
@@ -1266,121 +1266,121 @@ yyreduce:
   switch (yyn)
     {
   case 2:
-#line 20 "exprtree.y"
+#line 20 "./src/silc.y"
     {parseSyntaxTree((yyvsp[-2].no), out);}
-#line 1272 "y.tab.c"
+#line 1272 "./src/y.tab.c"
     break;
 
   case 3:
-#line 23 "exprtree.y"
+#line 23 "./src/silc.y"
     {(yyval.no) = createNode(OP, '+', -1, (yyvsp[-2].no), (yyvsp[0].no));}
-#line 1278 "y.tab.c"
+#line 1278 "./src/y.tab.c"
     break;
 
   case 4:
-#line 24 "exprtree.y"
+#line 24 "./src/silc.y"
     {(yyval.no) = createNode(OP, '-', -1, (yyvsp[-2].no), (yyvsp[0].no));}
-#line 1284 "y.tab.c"
+#line 1284 "./src/y.tab.c"
     break;
 
   case 5:
-#line 25 "exprtree.y"
+#line 25 "./src/silc.y"
     {(yyval.no) = createNode(OP, '*', -1, (yyvsp[-2].no), (yyvsp[0].no));}
-#line 1290 "y.tab.c"
+#line 1290 "./src/y.tab.c"
     break;
 
   case 6:
-#line 26 "exprtree.y"
+#line 26 "./src/silc.y"
     {(yyval.no) = createNode(OP, '/', -1, (yyvsp[-2].no), (yyvsp[0].no));}
-#line 1296 "y.tab.c"
+#line 1296 "./src/y.tab.c"
     break;
 
   case 7:
-#line 27 "exprtree.y"
+#line 27 "./src/silc.y"
     {(yyval.no) = (yyvsp[-1].no);}
-#line 1302 "y.tab.c"
+#line 1302 "./src/y.tab.c"
     break;
 
   case 8:
-#line 28 "exprtree.y"
+#line 28 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1308 "y.tab.c"
+#line 1308 "./src/y.tab.c"
     break;
 
   case 9:
-#line 29 "exprtree.y"
+#line 29 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1314 "y.tab.c"
+#line 1314 "./src/y.tab.c"
     break;
 
   case 10:
-#line 30 "exprtree.y"
+#line 30 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1320 "y.tab.c"
+#line 1320 "./src/y.tab.c"
     break;
 
   case 11:
-#line 33 "exprtree.y"
+#line 33 "./src/silc.y"
     {(yyval.no) = createNode(Q, '\0', -1, (yyvsp[-1].no), NULL);}
-#line 1326 "y.tab.c"
+#line 1326 "./src/y.tab.c"
     break;
 
   case 12:
-#line 36 "exprtree.y"
+#line 36 "./src/silc.y"
     {(yyval.no) = createNode(READ, '\0', -1, (yyvsp[-2].no), NULL);}
-#line 1332 "y.tab.c"
+#line 1332 "./src/y.tab.c"
     break;
 
   case 13:
-#line 39 "exprtree.y"
+#line 39 "./src/silc.y"
     {(yyval.no) = createNode(WRITE, '\0', -1, (yyvsp[-2].no), NULL);}
-#line 1338 "y.tab.c"
+#line 1338 "./src/y.tab.c"
     break;
 
   case 14:
-#line 42 "exprtree.y"
+#line 42 "./src/silc.y"
     {(yyval.no) = createNode(ASSN, '\0', -1, (yyvsp[-3].no), (yyvsp[-1].no));}
-#line 1344 "y.tab.c"
+#line 1344 "./src/y.tab.c"
     break;
 
   case 15:
-#line 45 "exprtree.y"
+#line 45 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1350 "y.tab.c"
+#line 1350 "./src/y.tab.c"
     break;
 
   case 16:
-#line 46 "exprtree.y"
+#line 46 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1356 "y.tab.c"
+#line 1356 "./src/y.tab.c"
     break;
 
   case 17:
-#line 47 "exprtree.y"
+#line 47 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1362 "y.tab.c"
+#line 1362 "./src/y.tab.c"
     break;
 
   case 18:
-#line 48 "exprtree.y"
+#line 48 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1368 "y.tab.c"
+#line 1368 "./src/y.tab.c"
     break;
 
   case 19:
-#line 50 "exprtree.y"
+#line 50 "./src/silc.y"
     {(yyval.no) = connect((yyvsp[-1].no), (yyvsp[0].no));}
-#line 1374 "y.tab.c"
+#line 1374 "./src/y.tab.c"
     break;
 
   case 20:
-#line 51 "exprtree.y"
+#line 51 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1380 "y.tab.c"
+#line 1380 "./src/y.tab.c"
     break;
 
 
-#line 1384 "y.tab.c"
+#line 1384 "./src/y.tab.c"
 
       default: break;
     }
@@ -1612,7 +1612,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 54 "exprtree.y"
+#line 54 "./src/silc.y"
 
 
 int yyerror(char const *s)

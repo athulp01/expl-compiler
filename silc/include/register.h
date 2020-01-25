@@ -3,7 +3,7 @@
 
 #define REG(x) ((int)x + 4096 - (int)'a')
 
-enum STATUS{IN_USE, FREE, RESV};
+enum STATUS{FREE, IN_USE, RESV};
 
 typedef short reg_index;
 
