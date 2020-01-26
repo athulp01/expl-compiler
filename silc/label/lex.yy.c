@@ -815,7 +815,6 @@ YY_RULE_SETUP
 
                 struct labelNode* tmp = head;
                 while(tmp) {
-                    printf("%send %send",tmp->label, yytext+i+2);
                     if(strcmp(tmp->label, yytext+i+2) == 0) {
                         fprintf(translated, ", %d\n", tmp->mem);
                         break;
@@ -828,7 +827,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 73 "label.l"
+#line 72 "label.l"
 {
             if(pass == 2) {
                 int i;
@@ -839,7 +838,7 @@ YY_RULE_SETUP
                 struct labelNode* tmp = head;
                 while(tmp) {
                     if(strcmp(tmp->label, yytext+i+1) == 0) {
-                        fprintf(translated, ", %d\n", tmp->mem);
+                        fprintf(translated, " %d\n", tmp->mem);
                         break;
                     }
                     tmp = tmp->next;
@@ -850,15 +849,15 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 92 "label.l"
+#line 91 "label.l"
 {if(pass == 2)fprintf(translated, "%s\n", yytext);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 94 "label.l"
+#line 93 "label.l"
 ECHO;
 	YY_BREAK
-#line 861 "lex.yy.c"
+#line 860 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1866,7 +1865,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 94 "label.l"
+#line 93 "label.l"
 
 
 int yywrap() {
@@ -1879,9 +1878,8 @@ int yywrap() {
 }
 int main() {
     head = NULL;table = NULL;
-    translated = fopen("translated.xsm", "w");
+    translated = fopen("../translated.xsm", "w");
     yyin = fopen("../out.xsm", "r");
     yylex();
-
-    return 1;
+    return 0;
 }

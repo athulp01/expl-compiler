@@ -1,13 +1,11 @@
 #include "node.h"
 #include <stdlib.h>
 
-struct tnode* createNode(enum TYPE type, char s, int n, struct tnode *l, struct tnode *r) {
+struct tnode* createNode(enum TYPE type, char *s, int n, struct tnode *l, struct tnode *r) {
     struct tnode *tmp = (struct tnode*)malloc(sizeof(struct tnode));
     tmp->type = type;
-    if(s == '\0') {
-        tmp->value.num = n;
-    }else 
-        tmp->value.name = s;
+    tmp->varname = s;
+    tmp->val = n;
     tmp->left = l;
     tmp->right = r;
     return tmp;

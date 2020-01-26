@@ -1,20 +1,18 @@
 #pragma once
 
-enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN, Q};
-
-typedef union val {
-    int num;
-    char name;
-}val;
+enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN, Q, IF, WHILE, IF_BODY};
+enum VARTYPE{INT, BOOL};
 
 typedef struct tnode { 
     enum TYPE type;
-    val value;
+    enum VARTYPE vartype;
+    char *varname;
+    int val;
 	struct tnode *left,*right;	//left and right branches   
 }tnode;
 
 /*Create a node tnode*/
-struct tnode* createNode(enum TYPE type, char s, int n, 
+tnode* createNode(enum TYPE type, char *s, int n, 
             struct tnode *l, struct tnode *r);
 
-struct tnode* connect(tnode* first, tnode* second);
+tnode* connect(tnode* first, tnode* second);

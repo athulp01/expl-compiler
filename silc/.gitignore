@@ -1,0 +1,7 @@
+silc
+.expl
+.xsm
+*.xsm 
+*.expl
+*.out
+./xsm_expl/

@@ -77,12 +77,18 @@ branch2 ("JMP")[' ']+[a-zA-Z0-9]+
                     else break;
                 }
                 struct labelNode* tmp = head;
+                int found = 0;
                 while(tmp) {
                     if(strcmp(tmp->label, yytext+i+1) == 0) {
-                        fprintf(translated, ", %d\n", tmp->mem);
+                        fprintf(translated, " %d\n", tmp->mem);
+                        found = 1;
                         break;
                     }
                     tmp = tmp->next;
+                }
+                if(!found) {
+                    printf("Label not found\n");
+                    exit(1);
                 }
 
             }
@@ -102,9 +108,8 @@ int yywrap() {
 }
 int main() {
     head = NULL;table = NULL;
-    translated = fopen("translated.xsm", "w");
+    translated = fopen("../translated.xsm", "w");
     yyin = fopen("../out.xsm", "r");
     yylex();
-
-    return 1;
+    return 0;
 }
