@@ -49,46 +49,72 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    _PLUS = 258,
-    _MINUS = 259,
-    _MUL = 260,
-    _DIV = 261,
-    _END = 262,
-    _BEGIN = 263,
-    _READ = 264,
-    _WRITE = 265,
-    _SEMI = 266,
-    _EQUALS = 267,
-    _Q = 268,
-    _ID = 269,
-    _NUM = 270
+    _IF = 258,
+    _WHILE = 259,
+    _THEN = 260,
+    _ELSE = 261,
+    _ENDIF = 262,
+    _ENDWHILE = 263,
+    _DO = 264,
+    _LT = 265,
+    _GT = 266,
+    _EQ = 267,
+    _NE = 268,
+    _LE = 269,
+    _GE = 270,
+    _PLUS = 271,
+    _MINUS = 272,
+    _MUL = 273,
+    _DIV = 274,
+    _END = 275,
+    _BEGIN = 276,
+    _READ = 277,
+    _WRITE = 278,
+    _SEMI = 279,
+    _EQUALS = 280,
+    _Q = 281,
+    _ID = 282,
+    _NUM = 283
   };
 #endif
 /* Tokens.  */
-#define _PLUS 258
-#define _MINUS 259
-#define _MUL 260
-#define _DIV 261
-#define _END 262
-#define _BEGIN 263
-#define _READ 264
-#define _WRITE 265
-#define _SEMI 266
-#define _EQUALS 267
-#define _Q 268
-#define _ID 269
-#define _NUM 270
+#define _IF 258
+#define _WHILE 259
+#define _THEN 260
+#define _ELSE 261
+#define _ENDIF 262
+#define _ENDWHILE 263
+#define _DO 264
+#define _LT 265
+#define _GT 266
+#define _EQ 267
+#define _NE 268
+#define _LE 269
+#define _GE 270
+#define _PLUS 271
+#define _MINUS 272
+#define _MUL 273
+#define _DIV 274
+#define _END 275
+#define _BEGIN 276
+#define _READ 277
+#define _WRITE 278
+#define _SEMI 279
+#define _EQUALS 280
+#define _Q 281
+#define _ID 282
+#define _NUM 283
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 9 "./src/silc.y"
+#line 10 "./src/silc.y"
 
 	struct tnode *no;
 	
 
-#line 92 "./include/silc.h"
+#line 118 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

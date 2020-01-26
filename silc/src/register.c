@@ -1,6 +1,11 @@
 #include "register.h"
 
 enum STATUS registers[20];
+int label = 0;
+
+int getLabel() {
+    return label++;
+}
 
 reg_index getReg() {
     for(reg_index i=0; i<20; i++)

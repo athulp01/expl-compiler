@@ -1,13 +1,16 @@
 #pragma once
 #include<stdio.h>
 
-#define REG(x) ((int)x + 4096 - (int)'a')
+#define REG(x) ((int)x[0] + 4096 - (int)'a')
 
 enum STATUS{FREE, IN_USE, RESV};
 
 typedef short reg_index;
 
 extern enum STATUS registers[20];
+extern int label;
+
+int getLabel();
 
 //Get a register
 reg_index getReg();

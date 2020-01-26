@@ -79,7 +79,7 @@ branch2 ("JMP")[' ']+[a-zA-Z0-9]+
                 struct labelNode* tmp = head;
                 while(tmp) {
                     if(strcmp(tmp->label, yytext+i+1) == 0) {
-                        fprintf(translated, ", %d\n", tmp->mem);
+                        fprintf(translated, " %d\n", tmp->mem);
                         break;
                     }
                     tmp = tmp->next;
@@ -102,9 +102,8 @@ int yywrap() {
 }
 int main() {
     head = NULL;table = NULL;
-    translated = fopen("translated.xsm", "w");
+    translated = fopen("../translated.xsm", "w");
     yyin = fopen("../out.xsm", "r");
     yylex();
-
-    return 1;
+    return 0;
 }
