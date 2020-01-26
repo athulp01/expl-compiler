@@ -1,3 +1,6 @@
 silc
 .expl
 .xsm
+*.xsm 
+*.expl
+*.out

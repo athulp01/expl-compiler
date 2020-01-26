@@ -122,7 +122,7 @@ void eval_read(tnode* root, FILE *out) {
 
 void eval_assgn(tnode *root, FILE *out) {
     if(root->right->type == VAR) {
-        fprintf(out, "MOV [%d], [%d]", REG(root->left->varname), REG(root->right->varname));
+        fprintf(out, "MOV [%d], [%d]\n", REG(root->left->varname), REG(root->right->varname));
         return;
     }else if(root->right->type == OP) {
         fprintf(out, "MOV [%d], R%d\n",REG(root->left->varname), eval_expr(root->right, out));
