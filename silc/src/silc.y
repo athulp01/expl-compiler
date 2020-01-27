@@ -11,8 +11,8 @@
 	struct tnode *no;
 	
 }
-%type <no> expr _NUM _END read write stmt stmtList assgn _ID func ifstmt whilestmt
-%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO
+%type <no> expr _NUM _END read write stmt stmtList assgn _ID func ifstmt whilestmt break cont
+%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT
 %token _LT _GT _EQ _NE _LE _GE 
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q 
 %token _ID _NUM
@@ -57,6 +57,11 @@ ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE stmtList _ENDIF _SEMI  {tnode *tm
        | _IF '(' expr ')' _THEN stmtList _ENDIF _SEMI                {tnode *tmp = createNode(IF_BODY, "", -1, $6, NULL);
                                                                  $$ = createNode(IF, "", -1, $3, tmp);}
        ;
+break : _BREAK _SEMI             {$$ = createNode(BREAK, "", -1, NULL, NULL);}
+      ;
+
+cont :  _CONT _SEMI             {$$ = createNode(CONT, "", -1, NULL, NULL);}
+     ;   
 
 whilestmt : _WHILE '(' expr ')' _DO stmtList _ENDWHILE _SEMI         {$$ = createNode(WHILE, "", -1, $3, $6);}
           ;
@@ -67,6 +72,8 @@ stmt : read                     {$$ = $1;}
      | func                     {$$ = $1;}
      | ifstmt                   {$$ = $1;}
      | whilestmt                {$$ = $1;}
+     | break                    {$$ = $1;}
+     | cont                     {$$ = $1;}
      ;
 stmtList : stmtList stmt        {$$ = connect($1, $2);}
          | stmt                 {$$ = $1;}

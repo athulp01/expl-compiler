@@ -39,6 +39,8 @@
 "while" {return _WHILE;}
 "endwhile" {return _ENDWHILE;}
 "else"	{return _ELSE;}
+"break"	{return _BREAK;}
+"continue"	{return _CONT;}
 
 %%
 

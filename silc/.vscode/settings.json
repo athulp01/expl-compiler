@@ -1,3 +1,8 @@
 {
-    "C_Cpp.default.includePath": ["./include/"],
+    "C_Cpp.default.includePath": [
+        "./include/"
+    ],
+    "files.associations": {
+        "register.h": "c"
+    },
 }

@@ -836,12 +836,18 @@ YY_RULE_SETUP
                     else break;
                 }
                 struct labelNode* tmp = head;
+                int found = 0;
                 while(tmp) {
                     if(strcmp(tmp->label, yytext+i+1) == 0) {
                         fprintf(translated, " %d\n", tmp->mem);
+                        found = 1;
                         break;
                     }
                     tmp = tmp->next;
+                }
+                if(!found) {
+                    printf("Label not found\n");
+                    exit(1);
                 }
 
             }
@@ -849,15 +855,15 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 91 "label.l"
+#line 97 "label.l"
 {if(pass == 2)fprintf(translated, "%s\n", yytext);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 93 "label.l"
+#line 99 "label.l"
 ECHO;
 	YY_BREAK
-#line 860 "lex.yy.c"
+#line 866 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1865,7 +1871,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 93 "label.l"
+#line 99 "label.l"
 
 
 int yywrap() {

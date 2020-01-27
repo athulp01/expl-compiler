@@ -3,6 +3,23 @@
 #include "evaluators.h"
 #include "string.h"
 
+struct loop_llist *llist;
+
+struct loop_llist* createLlistNode(int s, int e, struct loop_llist* root) {
+    struct loop_llist *tmp = (struct loop_llist*)malloc(sizeof(struct loop_llist));
+    tmp->start_label = s;
+    tmp->end_label = e;
+    tmp->next = root;
+    if(root) root->prev = tmp;
+    return tmp;
+}
+
+struct loop_llist* deleteLlistNode(struct loop_llist* root) {
+    if(root->next) {
+        root->next->prev = NULL;
+        return root->next;
+    }else return NULL;
+}
 
 void eval_tree(tnode* root, FILE *out) {
     if(root == NULL) return;
@@ -24,7 +41,12 @@ void eval_tree(tnode* root, FILE *out) {
         case WHILE:
             eval_while(root, out);
             return;
-
+        case BREAK:
+            eval_break(out);
+            break;
+        case CONT:
+            eval_cont(out);
+            break;
     }
     eval_tree(root->right, out);
     return;
@@ -140,25 +162,33 @@ void eval_assgn(tnode *root, FILE *out) {
 }
 void eval_if(tnode *root, FILE *out) {
     reg_index res = eval_expr(root->left, out);
-    int start = getLabel(), end = getLabel();
-    fprintf(out, "JZ R%d, L%d\n", res, start);
-    eval_tree(root->right->left, out);
-    fprintf(out, "JMP L%d\n", end);
-    fprintf(out, "L%d:\n", start);
-    eval_tree(root->right->right, out);
-    fprintf(out, "L%d:\n", end);
+    if(root->right->right) {
+        int start = getLabel(), end = getLabel();
+        fprintf(out, "JZ R%d, L%d\n", res, start);
+        eval_tree(root->right->left, out);
+        fprintf(out, "JMP L%d\n", end);
+        fprintf(out, "L%d:\n", start);
+        eval_tree(root->right->right, out);
+        fprintf(out, "L%d:\n", end);
+    }else {
+        int end = getLabel();
+        fprintf(out, "JZ R%d, L%d\n", res, end);
+        eval_tree(root->right->left, out);
+        fprintf(out, "L%d:\n", end);
+    }
 
 }
 
 void eval_while(tnode *root,FILE *out) {
-    int start = getLabel();
-    int end = getLabel();
-    fprintf(out, "L%d:\n", start);
+    int loop_start = getLabel(), loop_end = getLabel();
+    llist = createLlistNode(loop_start, loop_end, llist);
+    fprintf(out, "L%d:\n", loop_start);
     reg_index res = eval_expr(root->left, out);
-    fprintf(out,"JZ R%d, L%d\n", res, end);
+    fprintf(out,"JZ R%d, L%d\n", res, loop_end);
     eval_tree(root->right, out);
-    fprintf(out, "JMP L%d\n", start);
-    fprintf(out, "L%d:\n", end);
+    fprintf(out, "JMP L%d\n", loop_start);
+    fprintf(out, "L%d:\n", loop_end);
+    llist = deleteLlistNode(llist);
 }
 
 reg_index eval_func(struct tnode *root, FILE *out) {
@@ -173,4 +203,19 @@ reg_index eval_func(struct tnode *root, FILE *out) {
     fprintf(out, "JZ R%d, %s\n INR R%d\n",tmp, label, answer);
     return answer;
 }
+
+void eval_break(FILE *out) {
+    if(llist) {
+        fprintf(out, "JMP L%d\n", llist->end_label);
+        deleteLlistNode(llist);
+    }
+}
+
+void eval_cont(FILE *out) {
+    if(llist) {
+        fprintf(out, "JMP L%d\n", llist->start_label);
+        deleteLlistNode(llist);
+    }
+}
+
 

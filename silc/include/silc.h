@@ -56,25 +56,27 @@ extern int yydebug;
     _ENDIF = 262,
     _ENDWHILE = 263,
     _DO = 264,
-    _LT = 265,
-    _GT = 266,
-    _EQ = 267,
-    _NE = 268,
-    _LE = 269,
-    _GE = 270,
-    _PLUS = 271,
-    _MINUS = 272,
-    _MUL = 273,
-    _DIV = 274,
-    _END = 275,
-    _BEGIN = 276,
-    _READ = 277,
-    _WRITE = 278,
-    _SEMI = 279,
-    _EQUALS = 280,
-    _Q = 281,
-    _ID = 282,
-    _NUM = 283
+    _BREAK = 265,
+    _CONT = 266,
+    _LT = 267,
+    _GT = 268,
+    _EQ = 269,
+    _NE = 270,
+    _LE = 271,
+    _GE = 272,
+    _PLUS = 273,
+    _MINUS = 274,
+    _MUL = 275,
+    _DIV = 276,
+    _END = 277,
+    _BEGIN = 278,
+    _READ = 279,
+    _WRITE = 280,
+    _SEMI = 281,
+    _EQUALS = 282,
+    _Q = 283,
+    _ID = 284,
+    _NUM = 285
   };
 #endif
 /* Tokens.  */
@@ -85,25 +87,27 @@ extern int yydebug;
 #define _ENDIF 262
 #define _ENDWHILE 263
 #define _DO 264
-#define _LT 265
-#define _GT 266
-#define _EQ 267
-#define _NE 268
-#define _LE 269
-#define _GE 270
-#define _PLUS 271
-#define _MINUS 272
-#define _MUL 273
-#define _DIV 274
-#define _END 275
-#define _BEGIN 276
-#define _READ 277
-#define _WRITE 278
-#define _SEMI 279
-#define _EQUALS 280
-#define _Q 281
-#define _ID 282
-#define _NUM 283
+#define _BREAK 265
+#define _CONT 266
+#define _LT 267
+#define _GT 268
+#define _EQ 269
+#define _NE 270
+#define _LE 271
+#define _GE 272
+#define _PLUS 273
+#define _MINUS 274
+#define _MUL 275
+#define _DIV 276
+#define _END 277
+#define _BEGIN 278
+#define _READ 279
+#define _WRITE 280
+#define _SEMI 281
+#define _EQUALS 282
+#define _Q 283
+#define _ID 284
+#define _NUM 285
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -114,7 +118,7 @@ union YYSTYPE
 	struct tnode *no;
 	
 
-#line 118 "./include/silc.h"
+#line 122 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
