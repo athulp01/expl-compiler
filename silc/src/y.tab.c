@@ -1440,7 +1440,7 @@ yyreduce:
 
   case 17:
 #line 43 "./src/silc.y"
-    {(yyval.no) = createNode(Q, "", -1, (yyvsp[-1].no), NULL);}
+    {(yyval.no) = createNode(OP, "Q", -1, (yyvsp[-1].no), NULL);}
 #line 1445 "./src/y.tab.c"
     break;
 

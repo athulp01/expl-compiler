@@ -40,7 +40,7 @@ expr : expr _PLUS expr		{$$ = createNode(OP, "+", -1, $1, $3);}
      | func                 {$$ = $1;}
 	 ;
 
-func : _Q '(' expr ')'       {$$ = createNode(Q, "", -1, $3, NULL);}  
+func : _Q '(' expr ')'       {$$ = createNode(OP, "Q", -1, $3, NULL);}  
      ;
 
 read : _READ '(' _ID ')' _SEMI      {$$ = createNode(READ, "", -1, $3, NULL);}

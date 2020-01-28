@@ -1,6 +1,6 @@
 #pragma once
 
-enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN, Q, IF, WHILE, IF_BODY, BREAK, CONT};
+enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN, QFUNC, IF, WHILE, IF_BODY, BREAK, CONT};
 enum VARTYPE{INT, BOOL};
 
 typedef struct tnode { 

@@ -23,6 +23,6 @@ void eval_write(tnode*, FILE*);
 void eval_assgn(tnode*, FILE*);
 void eval_if(tnode*, FILE*);
 void eval_while(tnode*, FILE*);
-reg_index eval_func(tnode*, FILE*);
+reg_index eval_qfunc(tnode*, FILE*);
 void eval_break(FILE*);
 void eval_cont(FILE*);

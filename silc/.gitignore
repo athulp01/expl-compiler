@@ -5,3 +5,4 @@ silc
 *.expl
 *.out
 ./xsm_expl/
+.vscode/

@@ -24,7 +24,6 @@ struct loop_llist* deleteLlistNode(struct loop_llist* root) {
 void eval_tree(tnode* root, FILE *out) {
     if(root == NULL) return;
     eval_tree(root->left, out);
-    reg_index mem, comm, write, tmp;
     switch(root->type) {
         case READ:
             eval_read(root, out);
@@ -69,6 +68,7 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
     reg_index right = eval_expr(root->right, out);
     
     if(root->type == OP) {
+        if(root->right && root->left)
         if(!root->left->vartype == NUM || !root->right->vartype == NUM) {
             yyerror("Type mismatch in expression\n");
         }    
@@ -102,6 +102,9 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
         }else if(!strcmp(root->varname, "!=")) {
             fprintf(out, "NE R%d, R%d\n", left, right);
             root->vartype = BOOL;
+        }else if(!strcmp(root->varname, "Q")) {
+            root->vartype = INT;
+            return eval_qfunc(root, out);
         }
     }
     freeReg();
@@ -117,9 +120,7 @@ void eval_write(tnode *root, FILE *out) {
     }
     else if(root->left->type == VAR)
         fprintf(out, "MOV R%d, [%d]\n", writereg, REG(root->left->varname));
-    else if(root->left->type == Q) 
-        fprintf(out, "MOV R%d, R%d\n", writereg, eval_func(root->left, out));
-    else 
+    else if(root->left->type == NUM)
         fprintf(out, "MOV R%d, %d\n", writereg, root->left->val);
     fprintf(out, "MOV R%d, \"Write\"\nPUSH R%d\nMOV R%d, -2\nPUSH R%d\n", tmp, tmp, tmp, tmp);
     fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\n", writereg, tmp, tmp);
@@ -150,9 +151,6 @@ void eval_assgn(tnode *root, FILE *out) {
         fprintf(out, "MOV [%d], R%d\n",REG(root->left->varname), eval_expr(root->right, out));
         freeReg();
         return;
-    }else if(root->right->type == Q) {
-        fprintf(out, "MOV [%d], R%d\n",REG(root->left->varname), eval_func(root->right, out));
-        freeReg();
     }else {
         reg_index tmp = getReg();
         fprintf(out, "MOV R%d, %d\nMOV [%d], R%d\n",tmp,root->right->val, REG(root->left->varname), tmp);
@@ -189,18 +187,22 @@ void eval_while(tnode *root,FILE *out) {
     fprintf(out, "JMP L%d\n", loop_start);
     fprintf(out, "L%d:\n", loop_end);
     llist = deleteLlistNode(llist);
+    freeReg();
 }
 
-reg_index eval_func(struct tnode *root, FILE *out) {
+reg_index eval_qfunc(struct tnode *root, FILE *out) {
     char *label = "L1";
-    reg_index one = getReg();
     reg_index answer = getReg();
+    reg_index one = getReg();
     reg_index tmp = getReg();
     reg_index input = getReg();
     fprintf(out, "MOV R%d, 1\nMOV R%d, -1\n", one, answer);
     fprintf(out, "MOV R%d, %d\n", input, root->left->val);
-    fprintf(out, "%s:INR R%d\nDIV R%d, 2\n MOV R%d, R%d\n EQ R%d, R%d\n",label, answer, input, tmp, answer, tmp, one);
-    fprintf(out, "JZ R%d, %s\n INR R%d\n",tmp, label, answer);
+    fprintf(out, "%s:\nINR R%d\nDIV R%d, 2\nMOV R%d, R%d\nEQ R%d, R%d\n",label, answer, input, tmp, input, tmp, one);
+    fprintf(out, "JZ R%d, %s\nINR R%d\n",tmp, label, answer);
+    freeReg();
+    freeReg();
+    freeReg();
     return answer;
 }
 
