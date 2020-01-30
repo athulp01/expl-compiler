@@ -4,6 +4,7 @@
 	#include "silc.h"
 	#include  "node.h"
 	int number;
+	int yyerror(char *);
 	char c;
 
 %}
@@ -21,13 +22,15 @@
 ">=" {return _GE;}
 "==" {return _EQ;}
 "!=" {return _NE;}
+"%"	{return _MOD;}
 
 [\n \t]	{}
 [()]	{return *yytext;}
+"[" {return *yytext;}
+"]"	{return *yytext;}
 "end" {return _END;}
-[a-z] {char *s = strdup(yytext); yylval.no = createNode(VAR, s, -1, NULL, NULL); return _ID;}
-
 ";" {return _SEMI;}
+"," {return _COMMA;}
 "begin" {return _BEGIN;}
 "read" {return _READ;}
 "write" {return _WRITE;}
@@ -41,6 +44,11 @@
 "else"	{return _ELSE;}
 "break"	{return _BREAK;}
 "continue"	{return _CONT;}
+"decl"	{return _DECL;}
+"enddecl"	{return _ENDDECL;}
+"int"	{return _INT;}
+"str" {return _STR;}
+[a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
 
 %%
 

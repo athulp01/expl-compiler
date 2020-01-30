@@ -5,86 +5,134 @@
     #include "node.h"
 	int yylex(void);
     FILE *out, *yyin;
+    struct symbolList *globalSym;
 %}
 
 %union{
 	struct tnode *no;
+    char *name;
+    int type;
+    struct varList *var;
 	
 }
-%type <no> expr _NUM _END read write stmt stmtList assgn _ID func ifstmt whilestmt break cont
+%type <no> expr _NUM _END read write stmt stmtList assgn func ifstmt whilestmt break cont
+%type <name> _ID 
+%type <type> type
+%type <var> varlist
+
+%token _DECL _ENDDECL _INT _STR
 %token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT
 %token _LT _GT _EQ _NE _LE _GE 
-%token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q 
+%token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD
 %token _ID _NUM
+
+%left _MOD
 %left _PLUS _MINUS
 %left _MUL _DIV
-%nonassoc _LT _GT _EQ _NE _LE _GE
+
+%nonassoc _LT _GT _EQ _NE _LE _GE _ID
 
 %%
 program: _BEGIN stmtList _END _SEMI {eval_tree($2, out);}
        ;
 
-expr : expr _PLUS expr		{$$ = createNode(OP, "+", -1, $1, $3);}
-     | expr _MINUS expr  	{$$ = createNode(OP, "-", -1, $1, $3);}
-	 | expr _MUL expr	    {$$ = createNode(OP, "*", -1, $1, $3);}
-	 | expr _DIV expr	    {$$ = createNode(OP, "/", -1, $1, $3);}
-     | expr _LE expr        {$$ = createNode(OP, "<=", -1, $1, $3);}
-     | expr _GE expr        {$$ = createNode(OP, ">=", -1, $1, $3);}
-     | expr _EQ expr        {$$ = createNode(OP, "==", -1, $1, $3);}
-     | expr _LT expr        {$$ = createNode(OP, "<", -1, $1, $3);}
-     | expr _GT expr        {$$ = createNode(OP, ">", -1, $1, $3);}
-     | expr _NE expr        {$$ = createNode(OP, "!=", -1, $1, $3);}
-	 | '(' expr ')'		    {$$ = $2;}
-	 | _NUM			        {$$ = $1;}
-     | _ID                  {$$ = $1;}
-     | func                 {$$ = $1;}
+expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1, $1, $3);}
+     | expr _MINUS expr  	                            {$$ = createNode(OP, "-", -1, $1, $3);}
+	 | expr _MUL expr	                                {$$ = createNode(OP, "*", -1, $1, $3);}
+	 | expr _DIV expr	                                {$$ = createNode(OP, "/", -1, $1, $3);}
+     | expr _LE expr                                    {$$ = createNode(OP, "<=", -1, $1, $3);}
+     | expr _GE expr                                    {$$ = createNode(OP, ">=", -1, $1, $3);}
+     | expr _EQ expr                                    {$$ = createNode(OP, "==", -1, $1, $3);}
+     | expr _LT expr                                    {$$ = createNode(OP, "<", -1, $1, $3);}
+     | expr _GT expr                                    {$$ = createNode(OP, ">", -1, $1, $3);}
+     | expr _NE expr                                    {$$ = createNode(OP, "!=", -1, $1, $3);}
+     | expr _MOD expr                                    {$$ = createNode(OP, "%", -1, $1, $3);}
+	 | '(' expr ')'		                                {$$ = $2;}
+	 | _NUM			                                    {$$ = $1;}
+     | _ID                                              {$$ = createVarNode($1);}
+     | func                                             {$$ = $1;}
 	 ;
 
-func : _Q '(' expr ')'       {$$ = createNode(OP, "Q", -1, $3, NULL);}  
+func : _Q '(' expr ')'                                  {$$ = createNode(OP, "Q", -1, $3, NULL);}  
      ;
 
-read : _READ '(' _ID ')' _SEMI      {$$ = createNode(READ, "", -1, $3, NULL);}
-     ;
+read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createVarNode($3), NULL);}
+     
 
-write : _WRITE '(' expr ')' _SEMI   {$$ = createNode(WRITE, "", -1, $3, NULL);}
+write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
-assgn : _ID _EQUALS expr _SEMI     {$$ = createNode(ASSN, "", -1, $1, $3);}
+assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createVarNode($1), $3);}
       ;
 
-ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE stmtList _ENDIF _SEMI  {tnode *tmp = createNode(IF_BODY, "", -1, $6, $8);
-                                                                 $$ = createNode(IF, "", -1, $3, tmp);}
-       | _IF '(' expr ')' _THEN stmtList _ENDIF _SEMI                {tnode *tmp = createNode(IF_BODY, "", -1, $6, NULL);
-                                                                 $$ = createNode(IF, "", -1, $3, tmp);}
+ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE
+         stmtList _ENDIF _SEMI                          {
+                                                            tnode *tmp = createNode(IF_BODY, "", -1, $6, $8);
+                                                            $$ = createNode(IF, "", -1, $3, tmp);
+                                                        }
+       | _IF '(' expr ')' _THEN stmtList _ENDIF _SEMI   {
+                                                            tnode *tmp = createNode(IF_BODY, "", -1, $6, NULL);
+                                                            $$ = createNode(IF, "", -1, $3, tmp);
+                                                        }
        ;
-break : _BREAK _SEMI             {$$ = createNode(BREAK, "", -1, NULL, NULL);}
+
+break : _BREAK _SEMI                                    {$$ = createNode(BREAK, "", -1, NULL, NULL);}
       ;
 
-cont :  _CONT _SEMI             {$$ = createNode(CONT, "", -1, NULL, NULL);}
+cont :  _CONT _SEMI                                     {$$ = createNode(CONT, "", -1, NULL, NULL);}
      ;   
 
-whilestmt : _WHILE '(' expr ')' _DO stmtList _ENDWHILE _SEMI         {$$ = createNode(WHILE, "", -1, $3, $6);}
+whilestmt : _WHILE '(' expr ')' _DO stmtList
+             _ENDWHILE _SEMI                            {$$ = createNode(WHILE, "", -1, $3, $6);}
           ;
 
-stmt : read                     {$$ = $1;}
-     | write                    {$$ = $1;}
-     | assgn                    {$$ = $1;}
-     | func                     {$$ = $1;}
-     | ifstmt                   {$$ = $1;}
-     | whilestmt                {$$ = $1;}
-     | break                    {$$ = $1;}
-     | cont                     {$$ = $1;}
+stmt : read                                             {$$ = $1;}
+     | write                                            {$$ = $1;}
+     | assgn                                            {$$ = $1;}
+     | func                                             {$$ = $1;}
+     | ifstmt                                           {$$ = $1;}
+     | whilestmt                                        {$$ = $1;}
+     | break                                            {$$ = $1;}
+     | cont                                             {$$ = $1;}
+     | declaration                                      {}
      ;
-stmtList : stmtList stmt        {$$ = connect($1, $2);}
-         | stmt                 {$$ = $1;}
+
+stmtList : stmtList stmt                                {$$ = connect($1, $2);}
+         | stmt                                         {$$ = $1;}
          ;
 
+declaration : _DECL decllist _ENDDECL                   {}
+            | _DECL _ENDDECL                            {}
+            ;
+
+decllist : decllist decl                                {}
+         | decl                                         {}
+         ;
+        
+decl : type varlist _SEMI                               {
+                                                            struct varList* tmp = $2;
+                                                            while(tmp) {
+                                                                globalSym = createSlistNode(tmp->name, tmp->size, $1, globalSym);
+                                                                tmp = tmp->next;
+                                                            }
+                                                        }
+     ;
+
+type : _INT                                             {$$ = 0;}
+     | _STR                                             {$$ = 2;}
+     ;
+
+varlist : varlist _COMMA _ID                            {$$ = createVlistNode($3,1, $1);}
+        | varlist _COMMA _ID '[' _NUM ']'               {$$ = createVlistNode($3, $5->val, $1);}
+        | _ID '[' _NUM ']'                              {$$ = createVlistNode($1, $3->val, NULL);}
+        | _ID                                           {$$ = createVlistNode($1,1, NULL);}
+        ;
 %%
 
 int yyerror(char const *s)
 {
-    printf("yyerror %s",s);
-    exit(0);
+    printf("Syntax Error: %s",s);
+    exit(1);
 }
 
 
@@ -93,6 +141,7 @@ int main(int argc, char **argv) {
         printf("Usage: ./silc <source_file>\n");
         exit(1);
     }
+    globalSym = NULL;
     yyin = fopen(argv[1], "r");
     if(yyin == NULL) yyerror("Input file not found");
 	out = fopen("./out.xsm", "w");

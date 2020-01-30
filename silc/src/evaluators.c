@@ -3,10 +3,14 @@
 #include "evaluators.h"
 #include "string.h"
 
-struct loop_llist *llist;
+int yyerror(char *);
 
-struct loop_llist* createLlistNode(int s, int e, struct loop_llist* root) {
-    struct loop_llist *tmp = (struct loop_llist*)malloc(sizeof(struct loop_llist));
+
+struct labelList *llist;
+int curMemory = 4096;
+
+struct labelList* createLlistNode(int s, int e, struct labelList* root) {
+    struct labelList *tmp = (struct labelList*)malloc(sizeof(struct labelList));
     tmp->start_label = s;
     tmp->end_label = e;
     tmp->next = root;
@@ -14,11 +18,42 @@ struct loop_llist* createLlistNode(int s, int e, struct loop_llist* root) {
     return tmp;
 }
 
-struct loop_llist* deleteLlistNode(struct loop_llist* root) {
+struct varList* createVlistNode(char *name, int size, struct varList* root) {
+    struct varList *tmp = (struct varList*)malloc(sizeof(struct varList));
+    tmp->name = name;
+    tmp->size = size;
+    tmp->next = root;
+    return tmp;
+}
+
+struct labelList* deleteLlistNode(struct labelList* root) {
     if(root->next) {
         root->next->prev = NULL;
         return root->next;
     }else return NULL;
+}
+
+
+struct symbolList* createSlistNode(char *name, enum VARTYPE type , int size, struct symbolList* next) {
+    struct symbolList* tmp = (struct symbolList*)malloc(sizeof(struct symbolList));
+    tmp->name = name;
+    tmp->type = type;
+    tmp->size = size;
+    tmp->binding = curMemory;
+    curMemory += size;
+    tmp->next = next;
+    return tmp;
+}
+
+
+struct symbolList* searchSlist(char *name,  struct symbolList *root) {
+    while(root) {
+        if(strcmp(root->name, name) == 0) {
+            return root;
+        }
+        root = root->next;
+    }
+    return NULL;
 }
 
 void eval_tree(tnode* root, FILE *out) {
@@ -59,7 +94,7 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
         if(root->type == NUM)
             fprintf(out, "MOV R%d, %d\n", cur, root->val);
         else if(root->type == VAR)
-            fprintf(out, "MOV R%d, [%d]\n", cur, REG(root->varname));
+            fprintf(out, "MOV R%d, [%d]\n", cur, root->symbol->binding);
         return cur;
     }
 
@@ -105,6 +140,9 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
         }else if(!strcmp(root->varname, "Q")) {
             root->vartype = INT;
             return eval_qfunc(root, out);
+        }else if(!strcmp(root->varname, "%")) {
+            fprintf(out, "MOD R%d, R%d\n", left, right);
+            root->vartype = INT;
         }
     }
     freeReg();
@@ -119,7 +157,7 @@ void eval_write(tnode *root, FILE *out) {
         freeReg();
     }
     else if(root->left->type == VAR)
-        fprintf(out, "MOV R%d, [%d]\n", writereg, REG(root->left->varname));
+        fprintf(out, "MOV R%d, [%d]\n", writereg, root->left->symbol->binding);
     else if(root->left->type == NUM)
         fprintf(out, "MOV R%d, %d\n", writereg, root->left->val);
     fprintf(out, "MOV R%d, \"Write\"\nPUSH R%d\nMOV R%d, -2\nPUSH R%d\n", tmp, tmp, tmp, tmp);
@@ -134,7 +172,7 @@ void eval_read(tnode* root, FILE *out) {
     pushToStack(out);
     reg_index mem = getReg();
     reg_index comm = getReg();
-    fprintf(out, "MOV R%d, %d\n",mem, REG(root->left->varname));
+    fprintf(out, "MOV R%d, %d\n",mem, root->left->symbol->binding);
     fprintf(out, "MOV R%d, \"Read\"\nPUSH R%d\nMOV R%d, -1\n", comm, comm,comm);
     fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", comm, mem, comm, comm);
     fprintf(out, "CALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", mem, comm, comm, comm, comm);
@@ -145,15 +183,15 @@ void eval_read(tnode* root, FILE *out) {
 
 void eval_assgn(tnode *root, FILE *out) {
     if(root->right->type == VAR) {
-        fprintf(out, "MOV [%d], [%d]\n", REG(root->left->varname), REG(root->right->varname));
+        fprintf(out, "MOV [%d], [%d]\n", root->left->symbol->binding, root->right->symbol->binding);
         return;
     }else if(root->right->type == OP) {
-        fprintf(out, "MOV [%d], R%d\n",REG(root->left->varname), eval_expr(root->right, out));
+        fprintf(out, "MOV [%d], R%d\n",root->left->symbol->binding, eval_expr(root->right, out));
         freeReg();
         return;
     }else {
         reg_index tmp = getReg();
-        fprintf(out, "MOV R%d, %d\nMOV [%d], R%d\n",tmp,root->right->val, REG(root->left->varname), tmp);
+        fprintf(out, "MOV R%d, %d\nMOV [%d], R%d\n",tmp,root->right->val, root->left->symbol->binding, tmp);
         freeReg();
         return;
     }

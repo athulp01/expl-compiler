@@ -5,16 +5,37 @@
 #include <stdlib.h>
 
 extern int loop_start, loop_end;
+extern struct symbolList *globalSym;
 
-struct loop_llist{
+
+struct labelList{
     int start_label;
     int end_label;
-    struct loop_llist *next, *prev;
+    struct labelList *next, *prev;
 };
 
-struct loop_llist* createLlistNode(int, int, struct loop_llist*);
+struct symbolList{
+    char *name;
+    enum VARTYPE type;
+    int size;
+    int binding;
+    struct symbolList *next;
+};
 
-struct loop_llist* deleteLlistNode(struct loop_llist*);
+struct varList{
+    char *name;
+    int size;
+    struct varList *next;
+};
+
+
+struct symbolList* createSlistNode(char*, enum VARTYPE, int, struct symbolList*);
+struct symbolList* searchSlist(char* ,struct symbolList*);
+
+struct labelList* createLlistNode(int, int, struct labelList*);
+struct labelList* deleteLlistNode(struct labelList*);
+
+struct varList* createVlistNode(char*, int, struct varList*);
 
 void eval_tree(tnode*, FILE*);
 reg_index eval_expr(tnode*, FILE*);

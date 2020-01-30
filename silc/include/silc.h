@@ -49,76 +49,91 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    _IF = 258,
-    _WHILE = 259,
-    _THEN = 260,
-    _ELSE = 261,
-    _ENDIF = 262,
-    _ENDWHILE = 263,
-    _DO = 264,
-    _BREAK = 265,
-    _CONT = 266,
-    _LT = 267,
-    _GT = 268,
-    _EQ = 269,
-    _NE = 270,
-    _LE = 271,
-    _GE = 272,
-    _PLUS = 273,
-    _MINUS = 274,
-    _MUL = 275,
-    _DIV = 276,
-    _END = 277,
-    _BEGIN = 278,
-    _READ = 279,
-    _WRITE = 280,
-    _SEMI = 281,
-    _EQUALS = 282,
-    _Q = 283,
-    _ID = 284,
-    _NUM = 285
+    _DECL = 258,
+    _ENDDECL = 259,
+    _INT = 260,
+    _STR = 261,
+    _IF = 262,
+    _WHILE = 263,
+    _THEN = 264,
+    _ELSE = 265,
+    _ENDIF = 266,
+    _ENDWHILE = 267,
+    _DO = 268,
+    _BREAK = 269,
+    _CONT = 270,
+    _LT = 271,
+    _GT = 272,
+    _EQ = 273,
+    _NE = 274,
+    _LE = 275,
+    _GE = 276,
+    _PLUS = 277,
+    _MINUS = 278,
+    _MUL = 279,
+    _DIV = 280,
+    _END = 281,
+    _BEGIN = 282,
+    _READ = 283,
+    _WRITE = 284,
+    _SEMI = 285,
+    _EQUALS = 286,
+    _Q = 287,
+    _COMMA = 288,
+    _MOD = 289,
+    _ID = 290,
+    _NUM = 291
   };
 #endif
 /* Tokens.  */
-#define _IF 258
-#define _WHILE 259
-#define _THEN 260
-#define _ELSE 261
-#define _ENDIF 262
-#define _ENDWHILE 263
-#define _DO 264
-#define _BREAK 265
-#define _CONT 266
-#define _LT 267
-#define _GT 268
-#define _EQ 269
-#define _NE 270
-#define _LE 271
-#define _GE 272
-#define _PLUS 273
-#define _MINUS 274
-#define _MUL 275
-#define _DIV 276
-#define _END 277
-#define _BEGIN 278
-#define _READ 279
-#define _WRITE 280
-#define _SEMI 281
-#define _EQUALS 282
-#define _Q 283
-#define _ID 284
-#define _NUM 285
+#define _DECL 258
+#define _ENDDECL 259
+#define _INT 260
+#define _STR 261
+#define _IF 262
+#define _WHILE 263
+#define _THEN 264
+#define _ELSE 265
+#define _ENDIF 266
+#define _ENDWHILE 267
+#define _DO 268
+#define _BREAK 269
+#define _CONT 270
+#define _LT 271
+#define _GT 272
+#define _EQ 273
+#define _NE 274
+#define _LE 275
+#define _GE 276
+#define _PLUS 277
+#define _MINUS 278
+#define _MUL 279
+#define _DIV 280
+#define _END 281
+#define _BEGIN 282
+#define _READ 283
+#define _WRITE 284
+#define _SEMI 285
+#define _EQUALS 286
+#define _Q 287
+#define _COMMA 288
+#define _MOD 289
+#define _ID 290
+#define _NUM 291
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 10 "./src/silc.y"
+#line 11 "./src/silc.y"
 
 	struct tnode *no;
+    char *name;
+    int type;
+    struct varList *var;
 	
 
-#line 122 "./include/silc.h"
+#line 137 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

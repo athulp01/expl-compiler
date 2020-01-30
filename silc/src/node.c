@@ -1,7 +1,10 @@
-#include "node.h"
+#include "../include/node.h"
+#include "../include/evaluators.h"
 #include <stdlib.h>
 
-struct tnode* createNode(enum TYPE type, char *s, int n, struct tnode *l, struct tnode *r) {
+int yyerror(char *);
+
+tnode* createNode(enum TYPE type, char *s, int n,  struct tnode *l, struct tnode *r) {
     struct tnode *tmp = (struct tnode*)malloc(sizeof(struct tnode));
     tmp->type = type;
     tmp->varname = s;
@@ -12,10 +15,24 @@ struct tnode* createNode(enum TYPE type, char *s, int n, struct tnode *l, struct
 }
 
 
-struct tnode* connect(tnode* first, tnode* second) {
+tnode* connect(tnode* first, tnode* second) {
     struct tnode* tmp = (struct tnode*)malloc(sizeof(struct tnode));
     tmp->type = CONN;
     tmp->left = first;
     tmp->right = second;
     return tmp;
 }
+
+//TODO: implement NULL checking
+tnode* createVarNode(char *name) {
+    struct tnode* tmp = (struct tnode*)malloc(sizeof(struct tnode));
+    tmp->type = VAR;
+    tmp->varname = name;
+    tmp->symbol = searchSlist(name, globalSym);
+    if(tmp->symbol == NULL) {
+        yyerror("Variable is not defined\n");
+    }
+    return tmp;
+}
+
+
