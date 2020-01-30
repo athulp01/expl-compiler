@@ -24,9 +24,10 @@ tnode* connect(tnode* first, tnode* second) {
 }
 
 //TODO: implement NULL checking
-tnode* createVarNode(char *name) {
+tnode* createVarNode(char *name, int s) {
     struct tnode* tmp = (struct tnode*)malloc(sizeof(struct tnode));
     tmp->type = VAR;
+    tmp->val = s;
     tmp->varname = name;
     tmp->symbol = searchSlist(name, globalSym);
     if(tmp->symbol == NULL) {

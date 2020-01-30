@@ -94,7 +94,7 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
         if(root->type == NUM)
             fprintf(out, "MOV R%d, %d\n", cur, root->val);
         else if(root->type == VAR)
-            fprintf(out, "MOV R%d, [%d]\n", cur, root->symbol->binding);
+            fprintf(out, "MOV R%d, [%d]\n", cur, root->symbol->binding + root->val);
         return cur;
     }
 
@@ -103,10 +103,6 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
     reg_index right = eval_expr(root->right, out);
     
     if(root->type == OP) {
-        if(root->right && root->left)
-        if(!root->left->vartype == NUM || !root->right->vartype == NUM) {
-            yyerror("Type mismatch in expression\n");
-        }    
         if(!strcmp(root->varname,"+")) {
             fprintf(out, "ADD R%d, R%d\n",left, right);
             root->vartype = INT;
@@ -157,7 +153,7 @@ void eval_write(tnode *root, FILE *out) {
         freeReg();
     }
     else if(root->left->type == VAR)
-        fprintf(out, "MOV R%d, [%d]\n", writereg, root->left->symbol->binding);
+        fprintf(out, "MOV R%d, [%d]\n", writereg, root->left->symbol->binding + root->left->val);
     else if(root->left->type == NUM)
         fprintf(out, "MOV R%d, %d\n", writereg, root->left->val);
     fprintf(out, "MOV R%d, \"Write\"\nPUSH R%d\nMOV R%d, -2\nPUSH R%d\n", tmp, tmp, tmp, tmp);
@@ -172,7 +168,7 @@ void eval_read(tnode* root, FILE *out) {
     pushToStack(out);
     reg_index mem = getReg();
     reg_index comm = getReg();
-    fprintf(out, "MOV R%d, %d\n",mem, root->left->symbol->binding);
+    fprintf(out, "MOV R%d, %d\n",mem, root->left->symbol->binding + root->left->val);
     fprintf(out, "MOV R%d, \"Read\"\nPUSH R%d\nMOV R%d, -1\n", comm, comm,comm);
     fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", comm, mem, comm, comm);
     fprintf(out, "CALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", mem, comm, comm, comm, comm);
@@ -183,15 +179,15 @@ void eval_read(tnode* root, FILE *out) {
 
 void eval_assgn(tnode *root, FILE *out) {
     if(root->right->type == VAR) {
-        fprintf(out, "MOV [%d], [%d]\n", root->left->symbol->binding, root->right->symbol->binding);
+        fprintf(out, "MOV [%d], [%d]\n", root->left->symbol->binding + root->left->val, root->right->symbol->binding+ root->right->val);
         return;
     }else if(root->right->type == OP) {
-        fprintf(out, "MOV [%d], R%d\n",root->left->symbol->binding, eval_expr(root->right, out));
+        fprintf(out, "MOV [%d], R%d\n",root->left->symbol->binding + root->left->val, eval_expr(root->right, out));
         freeReg();
         return;
     }else {
         reg_index tmp = getReg();
-        fprintf(out, "MOV R%d, %d\nMOV [%d], R%d\n",tmp,root->right->val, root->left->symbol->binding, tmp);
+        fprintf(out, "MOV R%d, %d\nMOV [%d], R%d\n",tmp,root->right->val, root->left->symbol->binding + root->left->val, tmp);
         freeReg();
         return;
     }

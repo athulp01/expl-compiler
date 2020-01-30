@@ -26,11 +26,13 @@
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD
 %token _ID _NUM
 
+%nonassoc _LT _GT _EQ _NE _LE _GE _ID
+
 %left _MOD
 %left _PLUS _MINUS
 %left _MUL _DIV
 
-%nonassoc _LT _GT _EQ _NE _LE _GE _ID
+
 
 %%
 program: _BEGIN stmtList _END _SEMI {eval_tree($2, out);}
@@ -46,23 +48,25 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
      | expr _LT expr                                    {$$ = createNode(OP, "<", -1, $1, $3);}
      | expr _GT expr                                    {$$ = createNode(OP, ">", -1, $1, $3);}
      | expr _NE expr                                    {$$ = createNode(OP, "!=", -1, $1, $3);}
-     | expr _MOD expr                                    {$$ = createNode(OP, "%", -1, $1, $3);}
+     | expr _MOD expr                                   {$$ = createNode(OP, "%", -1, $1, $3);}
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1;}
-     | _ID                                              {$$ = createVarNode($1);}
+     | _ID                                              {$$ = createVarNode($1, 0);}
      | func                                             {$$ = $1;}
+     | _ID '[' _NUM ']'                                 {$$ = createVarNode($1, $3->val);}
 	 ;
 
 func : _Q '(' expr ')'                                  {$$ = createNode(OP, "Q", -1, $3, NULL);}  
      ;
 
-read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createVarNode($3), NULL);}
+read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createVarNode($3, 0), NULL);}
+     | _READ '(' _ID '[' _NUM ']' ')' _SEMI             {$$ = createNode(READ, "", -1, createVarNode($3, $5->val), NULL);}
      
 
 write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
-assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createVarNode($1), $3);}
+assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createVarNode($1, 1), $3);}
       ;
 
 ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE
