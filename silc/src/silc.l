@@ -50,7 +50,7 @@
 "int"	{return _INT;}
 "str" {return _STR;}
 [a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
-[\"][a-zA-Z0-9]+[\"] {yylval.no = createNode(STR, strdup(yytext), -1, NULL, NULL); return _TEXT;}
+\"(\\.|[^"\\])*\" {yylval.no = createNode(STR, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 
 %%
 
