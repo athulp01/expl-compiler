@@ -1,4 +1,5 @@
 #include "register.h"
+#include <stdlib.h>
 
 enum STATUS registers[20];
 int label = 0;
@@ -8,11 +9,15 @@ int getLabel() {
 }
 
 reg_index getReg() {
-    for(reg_index i=0; i<20; i++)
+    for(reg_index i=0; i<20; i++) {
         if(registers[i] == FREE) {
             registers[i] = IN_USE;
             return i;
         }
+    }
+    printf("All the registers are occupied\n");
+    exit(1);
+    return 1;
 }
 
 void freeReg(FILE *out) {

@@ -51,22 +51,23 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
      | expr _MOD expr                                   {$$ = createNode(OP, "%", -1, $1, $3);}
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1;}
-     | _ID                                              {$$ = createVarNode($1, 0);}
+     | _ID                                              {$$ = createVarNode($1, createNode(NUM, '\0', 0, NULL, NULL));}
      | func                                             {$$ = $1;}
-     | _ID '[' _NUM ']'                                 {$$ = createVarNode($1, $3->val);}
+     | _ID '[' expr ']'                                 {$$ = createVarNode($1, $3);}
 	 ;
 
 func : _Q '(' expr ')'                                  {$$ = createNode(OP, "Q", -1, $3, NULL);}  
      ;
 
-read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createVarNode($3, 0), NULL);}
-     | _READ '(' _ID '[' _NUM ']' ')' _SEMI             {$$ = createNode(READ, "", -1, createVarNode($3, $5->val), NULL);}
+read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createVarNode($3, createNode(NUM, '\0', 0, NULL, NULL)), NULL);}
+     | _READ '(' _ID '[' expr ']' ')' _SEMI             {$$ = createNode(READ, "", -1, createVarNode($3, $5), NULL);}
      
 
 write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
-assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createVarNode($1, 1), $3);}
+assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createVarNode($1, createNode(NUM, '\0', 0, NULL, NULL)), $3);}
+      | _ID '[' expr ']' _EQUALS expr _SEMI             {$$ = createNode(ASSN, "", -1, createVarNode($1, $3), $6);}
       ;
 
 ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE
@@ -116,7 +117,7 @@ decllist : decllist decl                                {}
 decl : type varlist _SEMI                               {
                                                             struct varList* tmp = $2;
                                                             while(tmp) {
-                                                                globalSym = createSlistNode(tmp->name, tmp->size, $1, globalSym);
+                                                                globalSym = createSlistNode(tmp->name, $1, tmp->size, globalSym);
                                                                 tmp = tmp->next;
                                                             }
                                                         }
@@ -149,7 +150,7 @@ int main(int argc, char **argv) {
     yyin = fopen(argv[1], "r");
     if(yyin == NULL) yyerror("Input file not found");
 	out = fopen("./out.xsm", "w");
-    fprintf(out, "0\n2056\n0\n0\n0\n0\n0\n0\nMOV SP, 4200\n");
+    fprintf(out, "0\n2056\n0\n0\n0\n0\n0\n0\nMOV SP, 4300\n");
     if(out == NULL) yyerror("file");
 	yyparse();
     fprintf(out, "MOV R19, \"Exit\"\nPUSH R19\nPUSH R19\nPUSH R19\nPUSH R19\nPUSH R19\nCALL 0");

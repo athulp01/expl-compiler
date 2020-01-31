@@ -14,7 +14,7 @@ typedef struct tnode {
 
 /*Create a node tnode*/
 
-tnode* createVarNode(char*, int);
+tnode* createVarNode(char*, tnode*);
 tnode* createNode(enum TYPE type, char *s, int n, 
             struct tnode *l, struct tnode *r);
 

@@ -5,6 +5,8 @@
 
 int yyerror(char *);
 
+/* TODO: Implement type checking, array bound checking */
+
 
 struct labelList *llist;
 int curMemory = 4096;
@@ -40,6 +42,8 @@ struct symbolList* createSlistNode(char *name, enum VARTYPE type , int size, str
     tmp->type = type;
     tmp->size = size;
     tmp->binding = curMemory;
+    if(size ==0) curMemory++;
+    else
     curMemory += size;
     tmp->next = next;
     return tmp;
@@ -86,18 +90,23 @@ void eval_tree(tnode* root, FILE *out) {
     return;
 }
 
+
 reg_index eval_expr(struct tnode *root, FILE *out) {
     if(root == NULL) return 0;
-    
-    if(!root->left && !root->right) {
-        reg_index cur = getReg();
-        if(root->type == NUM)
-            fprintf(out, "MOV R%d, %d\n", cur, root->val);
-        else if(root->type == VAR)
-            fprintf(out, "MOV R%d, [%d]\n", cur, root->symbol->binding + root->val);
+    reg_index cur = getReg();
+    if(root->type == NUM) {
+        fprintf(out, "MOV R%d, %d\n", cur, root->val);
         return cur;
     }
-
+    else if(root->type == VAR) {
+        reg_index num = getReg();
+        fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", num, root->symbol->binding, num, eval_expr(root->left, out));
+        fprintf(out, "MOV R%d, [R%d]\n", cur, num);
+        freeReg();
+        freeReg();
+        return cur;
+    }
+    freeReg();
     
     reg_index left = eval_expr(root->left, out);
     reg_index right = eval_expr(root->right, out);
@@ -152,10 +161,15 @@ void eval_write(tnode *root, FILE *out) {
         fprintf(out, "MOV R%d, R%d\n",writereg, eval_expr(root->left, out));
         freeReg();
     }
-    else if(root->left->type == VAR)
-        fprintf(out, "MOV R%d, [%d]\n", writereg, root->left->symbol->binding + root->left->val);
-    else if(root->left->type == NUM)
+    else if(root->left->type == VAR) {
+        fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", tmp, root->left->symbol->binding, tmp, eval_expr(root->left->left, out));
+        fprintf(out, "MOV R%d, [R%d]\n",writereg, tmp);
+        freeReg();
+    }
+    else if(root->left->type == NUM) {
         fprintf(out, "MOV R%d, %d\n", writereg, root->left->val);
+    }
+
     fprintf(out, "MOV R%d, \"Write\"\nPUSH R%d\nMOV R%d, -2\nPUSH R%d\n", tmp, tmp, tmp, tmp);
     fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\n", writereg, tmp, tmp);
     fprintf(out, "CALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", writereg, tmp, tmp, tmp, tmp);
@@ -168,10 +182,11 @@ void eval_read(tnode* root, FILE *out) {
     pushToStack(out);
     reg_index mem = getReg();
     reg_index comm = getReg();
-    fprintf(out, "MOV R%d, %d\n",mem, root->left->symbol->binding + root->left->val);
+    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem, root->left->symbol->binding, mem, eval_expr(root->left->left, out));
     fprintf(out, "MOV R%d, \"Read\"\nPUSH R%d\nMOV R%d, -1\n", comm, comm,comm);
     fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", comm, mem, comm, comm);
     fprintf(out, "CALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", mem, comm, comm, comm, comm);
+    freeReg();
     freeReg();
     freeReg();
     getFromStack(out);
@@ -179,15 +194,32 @@ void eval_read(tnode* root, FILE *out) {
 
 void eval_assgn(tnode *root, FILE *out) {
     if(root->right->type == VAR) {
-        fprintf(out, "MOV [%d], [%d]\n", root->left->symbol->binding + root->left->val, root->right->symbol->binding+ root->right->val);
-        return;
-    }else if(root->right->type == OP) {
-        fprintf(out, "MOV [%d], R%d\n",root->left->symbol->binding + root->left->val, eval_expr(root->right, out));
+        reg_index left = getReg(), right = getReg(), tmp=getReg();
+        fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", left, root->left->symbol->binding, left, eval_expr(root->left->left, out));
+        fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", right, root->right->symbol->binding, right, eval_expr(root->right->left, out));
+        fprintf(out, "MOV R%d, [R%d]\n", tmp, right);
+        fprintf(out, "MOV [R%d], R%d\n", left, tmp);
+        freeReg();
+        freeReg();
+        freeReg();
+        freeReg();
         freeReg();
         return;
-    }else {
+    }else if(root->right->type == OP) {
+        reg_index left = getReg();
+        fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", left, root->left->symbol->binding, left, eval_expr(root->left->left, out));
+        fprintf(out, "MOV [R%d], R%d\n",left, eval_expr(root->right, out));
+        freeReg();
+        freeReg();
+        freeReg();
+        return;
+    }else if(root->right->type == NUM){
         reg_index tmp = getReg();
-        fprintf(out, "MOV R%d, %d\nMOV [%d], R%d\n",tmp,root->right->val, root->left->symbol->binding + root->left->val, tmp);
+        reg_index mem = getReg();
+        fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem, root->left->symbol->binding, mem, eval_expr(root->left->left, out));
+        fprintf(out, "MOV R%d, %d\nMOV [R%d], R%d\n",tmp,root->right->val, mem, tmp);
+        freeReg();
+        freeReg();
         freeReg();
         return;
     }
@@ -208,6 +240,7 @@ void eval_if(tnode *root, FILE *out) {
         eval_tree(root->right->left, out);
         fprintf(out, "L%d:\n", end);
     }
+    freeReg();
 
 }
 
