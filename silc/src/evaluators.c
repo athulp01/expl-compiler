@@ -107,6 +107,9 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
         freeReg();
         freeReg();
         return cur;
+    }else if(root->type == STR) {
+        fprintf(out, "MOV R%d, %s\n", cur, root->varname);
+        return cur;
     }
     freeReg();
     
@@ -172,6 +175,9 @@ void eval_write(tnode *root, FILE *out) {
     }
     else if(root->left->type == NUM) {
         fprintf(out, "MOV R%d, %d\n", writereg, root->left->val);
+    }else if(root->left->type == STR) {
+        fprintf(out, "MOV R%d, R%d\n", writereg, eval_expr(root->left, out));
+        freeReg();
     }
 
     fprintf(out, "MOV R%d, \"Write\"\nPUSH R%d\nMOV R%d, -2\nPUSH R%d\n", tmp, tmp, tmp, tmp);
@@ -199,7 +205,6 @@ void eval_read(tnode* root, FILE *out) {
 void eval_assgn(tnode *root, FILE *out) {
     if(root->right->type == VAR) {
         if(root->right->symbol->type != root->left->symbol->type) {
-            printf("In var\n");
             yyerror("Type mismatch");
         }
         reg_index left = getReg(), right = getReg(), tmp=getReg();
@@ -215,19 +220,17 @@ void eval_assgn(tnode *root, FILE *out) {
         return;
     }else if(root->right->type == OP) {
         if(root->right->vartype != root->left->symbol->type) {
-            printf("In Op\n");
             yyerror("Type mismatch");
         }
         reg_index left = getReg();
         fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", left, root->left->symbol->binding, left, eval_expr(root->left->left, out));
-        fprintf(out, "MOV [R%d], R%d\n",left, eval_expr(root->right, out));
         freeReg();
+        fprintf(out, "MOV [R%d], R%d\n",left, eval_expr(root->right, out));
         freeReg();
         freeReg();
         return;
     }else if(root->right->type == NUM){
         if(root->right->vartype != root->left->symbol->type) {
-            printf("%d %d\n",root->right->vartype,root->left->symbol->type);
             yyerror("Type mismatch");
         }
         reg_index tmp = getReg();
@@ -238,6 +241,15 @@ void eval_assgn(tnode *root, FILE *out) {
         freeReg();
         freeReg();
         return;
+    }else if(root->right->type == STR) {
+        if(root->right->vartype != root->left->symbol->type) {
+            yyerror("Type mismatch");
+        }
+        reg_index mem = getReg();
+        fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem, root->left->symbol->binding, mem, eval_expr(root->left->left, out));
+        fprintf(out, "MOV [R%d], R%d\n", mem, eval_expr(root->right, out));
+        freeReg();
+        freeReg();
     }
 }
 void eval_if(tnode *root, FILE *out) {

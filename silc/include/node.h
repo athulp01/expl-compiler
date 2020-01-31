@@ -1,6 +1,7 @@
 #pragma once
 
-enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN, QFUNC, IF, WHILE, IF_BODY, BREAK, CONT};
+//TODO: set type to const and vartype to num
+enum TYPE{NUM, READ, WRITE, CONN, VAR, OP, ASSN, QFUNC, IF, WHILE, IF_BODY, BREAK, CONT, STR};
 enum VARTYPE{INT, BOOL, STRING};
 
 typedef struct tnode { 

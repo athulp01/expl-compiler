@@ -55,9 +55,9 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
      | _ID                                              {$$ = createVarNode($1, createNode(NUM, '\0', 0, NULL, NULL));}
      | func                                             {$$ = $1;}
      | _ID '[' expr ']'                                 {$$ = createVarNode($1, $3);}
+     | _TEXT                                            {$$ = $1; $$->vartype = STRING;}
 	 ;
 
-text : _TEXT                                            {printf("%s dfs", $1);}
 
 func : _Q '(' expr ')'                                  {$$ = createNode(OP, "Q", -1, $3, NULL);}  
      ;
