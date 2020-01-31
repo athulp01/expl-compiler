@@ -91,11 +91,13 @@ void eval_tree(tnode* root, FILE *out) {
 }
 
 
+
 reg_index eval_expr(struct tnode *root, FILE *out) {
     if(root == NULL) return 0;
     reg_index cur = getReg();
     if(root->type == NUM) {
         fprintf(out, "MOV R%d, %d\n", cur, root->val);
+        root->vartype = INT;
         return cur;
     }
     else if(root->type == VAR) {
@@ -112,6 +114,8 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
     reg_index right = eval_expr(root->right, out);
     
     if(root->type == OP) {
+        if(!(root->left->vartype == NUM && root->right->vartype == NUM))
+            yyerror("Type mismatch\n");
         if(!strcmp(root->varname,"+")) {
             fprintf(out, "ADD R%d, R%d\n",left, right);
             root->vartype = INT;
@@ -126,7 +130,7 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
             root->vartype = INT;
         }else if(!strcmp(root->varname,"<")) {
             fprintf(out, "LT R%d, R%d\n",left, right);
-            root->vartype = INT;
+            root->vartype = BOOL;
         }else if(!strcmp(root->varname, ">")) {
             fprintf(out, "GT R%d, R%d\n", left, right);
             root->vartype = BOOL;
@@ -183,10 +187,10 @@ void eval_read(tnode* root, FILE *out) {
     reg_index mem = getReg();
     reg_index comm = getReg();
     fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem, root->left->symbol->binding, mem, eval_expr(root->left->left, out));
+    freeReg();
     fprintf(out, "MOV R%d, \"Read\"\nPUSH R%d\nMOV R%d, -1\n", comm, comm,comm);
     fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", comm, mem, comm, comm);
     fprintf(out, "CALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", mem, comm, comm, comm, comm);
-    freeReg();
     freeReg();
     freeReg();
     getFromStack(out);
@@ -194,18 +198,26 @@ void eval_read(tnode* root, FILE *out) {
 
 void eval_assgn(tnode *root, FILE *out) {
     if(root->right->type == VAR) {
+        if(root->right->symbol->type != root->left->symbol->type) {
+            printf("In var\n");
+            yyerror("Type mismatch");
+        }
         reg_index left = getReg(), right = getReg(), tmp=getReg();
         fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", left, root->left->symbol->binding, left, eval_expr(root->left->left, out));
+        freeReg();
         fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", right, root->right->symbol->binding, right, eval_expr(root->right->left, out));
+        freeReg();
         fprintf(out, "MOV R%d, [R%d]\n", tmp, right);
         fprintf(out, "MOV [R%d], R%d\n", left, tmp);
         freeReg();
         freeReg();
         freeReg();
-        freeReg();
-        freeReg();
         return;
     }else if(root->right->type == OP) {
+        if(root->right->vartype != root->left->symbol->type) {
+            printf("In Op\n");
+            yyerror("Type mismatch");
+        }
         reg_index left = getReg();
         fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", left, root->left->symbol->binding, left, eval_expr(root->left->left, out));
         fprintf(out, "MOV [R%d], R%d\n",left, eval_expr(root->right, out));
@@ -214,6 +226,10 @@ void eval_assgn(tnode *root, FILE *out) {
         freeReg();
         return;
     }else if(root->right->type == NUM){
+        if(root->right->vartype != root->left->symbol->type) {
+            printf("%d %d\n",root->right->vartype,root->left->symbol->type);
+            yyerror("Type mismatch");
+        }
         reg_index tmp = getReg();
         reg_index mem = getReg();
         fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem, root->left->symbol->binding, mem, eval_expr(root->left->left, out));
@@ -229,6 +245,7 @@ void eval_if(tnode *root, FILE *out) {
     if(root->right->right) {
         int start = getLabel(), end = getLabel();
         fprintf(out, "JZ R%d, L%d\n", res, start);
+        freeReg();
         eval_tree(root->right->left, out);
         fprintf(out, "JMP L%d\n", end);
         fprintf(out, "L%d:\n", start);
@@ -237,11 +254,10 @@ void eval_if(tnode *root, FILE *out) {
     }else {
         int end = getLabel();
         fprintf(out, "JZ R%d, L%d\n", res, end);
+        freeReg();
         eval_tree(root->right->left, out);
         fprintf(out, "L%d:\n", end);
     }
-    freeReg();
-
 }
 
 void eval_while(tnode *root,FILE *out) {
@@ -250,11 +266,11 @@ void eval_while(tnode *root,FILE *out) {
     fprintf(out, "L%d:\n", loop_start);
     reg_index res = eval_expr(root->left, out);
     fprintf(out,"JZ R%d, L%d\n", res, loop_end);
+    freeReg();
     eval_tree(root->right, out);
     fprintf(out, "JMP L%d\n", loop_start);
     fprintf(out, "L%d:\n", loop_end);
     llist = deleteLlistNode(llist);
-    freeReg();
 }
 
 reg_index eval_qfunc(struct tnode *root, FILE *out) {

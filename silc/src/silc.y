@@ -8,6 +8,7 @@
     struct symbolList *globalSym;
 %}
 
+%locations
 %union{
 	struct tnode *no;
     char *name;
@@ -16,11 +17,11 @@
 	
 }
 %type <no> expr _NUM _END read write stmt stmtList assgn func ifstmt whilestmt break cont
-%type <name> _ID 
+%type <name> _ID _TEXT 
 %type <type> type
 %type <var> varlist
 
-%token _DECL _ENDDECL _INT _STR
+%token _DECL _ENDDECL _INT _STR _TEXT
 %token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT
 %token _LT _GT _EQ _NE _LE _GE 
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD
@@ -50,11 +51,13 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
      | expr _NE expr                                    {$$ = createNode(OP, "!=", -1, $1, $3);}
      | expr _MOD expr                                   {$$ = createNode(OP, "%", -1, $1, $3);}
 	 | '(' expr ')'		                                {$$ = $2;}
-	 | _NUM			                                    {$$ = $1;}
+	 | _NUM			                                    {$$ = $1; $$->vartype = INT;}
      | _ID                                              {$$ = createVarNode($1, createNode(NUM, '\0', 0, NULL, NULL));}
      | func                                             {$$ = $1;}
      | _ID '[' expr ']'                                 {$$ = createVarNode($1, $3);}
 	 ;
+
+text : _TEXT                                            {printf("%s dfs", $1);}
 
 func : _Q '(' expr ')'                                  {$$ = createNode(OP, "Q", -1, $3, NULL);}  
      ;
@@ -136,7 +139,7 @@ varlist : varlist _COMMA _ID                            {$$ = createVlistNode($3
 
 int yyerror(char const *s)
 {
-    printf("Syntax Error: %s",s);
+    printf("Line: | Syntax Error: %s \n", s);
     exit(1);
 }
 

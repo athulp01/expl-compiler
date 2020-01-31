@@ -24,7 +24,7 @@ tnode* connect(tnode* first, tnode* second) {
 }
 
 //TODO: implement NULL checking
-tnode* createVarNode(char *name, tnode* root) {
+tnode* createVarNode(char *name,  tnode* root) {
     struct tnode* tmp = (struct tnode*)malloc(sizeof(struct tnode));
     tmp->type = VAR;
     tmp->varname = name;
@@ -33,6 +33,7 @@ tnode* createVarNode(char *name, tnode* root) {
         yyerror("Variable is not defined\n");
     }
     tmp->left = root;
+    tmp->vartype = tmp->symbol->type;
     tmp->right = NULL;
     return tmp;
 }

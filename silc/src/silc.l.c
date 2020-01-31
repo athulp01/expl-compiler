@@ -163,8 +163,27 @@ extern FILE *yyin, *yyout;
 #define EOB_ACT_END_OF_FILE 1
 #define EOB_ACT_LAST_MATCH 2
     
-    #define YY_LESS_LINENO(n)
-    #define YY_LINENO_REWIND_TO(ptr)
+    /* Note: We specifically omit the test for yy_rule_can_match_eol because it requires
+     *       access to the local variable yy_act. Since yyless() is a macro, it would break
+     *       existing scanners that call yyless() from OUTSIDE yylex.
+     *       One obvious solution it to make yy_act a global. I tried that, and saw
+     *       a 5% performance hit in a non-yylineno scanner, because yy_act is
+     *       normally declared as a register variable-- so it is not worth it.
+     */
+    #define  YY_LESS_LINENO(n) \
+            do { \
+                int yyl;\
+                for ( yyl = n; yyl < yyleng; ++yyl )\
+                    if ( yytext[yyl] == '\n' )\
+                        --yylineno;\
+            }while(0)
+    #define YY_LINENO_REWIND_TO(dst) \
+            do {\
+                const char *p;\
+                for ( p = yy_cp-1; p >= (dst); --p)\
+                    if ( *p == '\n' )\
+                        --yylineno;\
+            }while(0)
     
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
@@ -484,6 +503,13 @@ static const flex_int16_t yy_chk[139] =
        95,   95,   95,   95,   95,   95,   95,   95
     } ;
 
+/* Table of booleans, true if rule could match eol. */
+static const flex_int32_t yy_rule_can_match_eol[40] =
+    {   0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+        };
+
 static yy_state_type yy_last_accepting_state;
 static char *yy_last_accepting_cpos;
 
@@ -499,7 +525,7 @@ int yy_flex_debug = 0;
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
 #line 1 "./src/silc.l"
-#line 2 "./src/silc.l"
+#line 3 "./src/silc.l"
     #include <stdlib.h>
 	#include <stdio.h>
 	#include "silc.h"
@@ -508,8 +534,8 @@ char *yytext;
 	int yyerror(char *);
 	char c;
 
-#line 511 "./src/silc.l.c"
-#line 512 "./src/silc.l.c"
+#line 537 "./src/silc.l.c"
+#line 538 "./src/silc.l.c"
 
 #define INITIAL 0
 
@@ -726,9 +752,9 @@ YY_DECL
 		}
 
 	{
-#line 12 "./src/silc.l"
+#line 13 "./src/silc.l"
 
-#line 731 "./src/silc.l.c"
+#line 757 "./src/silc.l.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -774,6 +800,16 @@ yy_find_action:
 
 		YY_DO_BEFORE_ACTION;
 
+		if ( yy_act != YY_END_OF_BUFFER && yy_rule_can_match_eol[yy_act] )
+			{
+			int yyl;
+			for ( yyl = 0; yyl < yyleng; ++yyl )
+				if ( yytext[yyl] == '\n' )
+					
+    yylineno++;
+;
+			}
+
 do_action:	/* This label is used only to access EOF actions. */
 
 		switch ( yy_act )
@@ -787,201 +823,201 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 13 "./src/silc.l"
+#line 14 "./src/silc.l"
 {number = atoi(yytext); yylval.no = createNode(NUM, '\0', number, NULL, NULL); return _NUM;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 14 "./src/silc.l"
+#line 15 "./src/silc.l"
 {return _PLUS;}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 15 "./src/silc.l"
+#line 16 "./src/silc.l"
 {return _MINUS;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 16 "./src/silc.l"
+#line 17 "./src/silc.l"
 {return _MUL;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 17 "./src/silc.l"
+#line 18 "./src/silc.l"
 {return _DIV;}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 18 "./src/silc.l"
+#line 19 "./src/silc.l"
 {return _EQUALS;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 19 "./src/silc.l"
+#line 20 "./src/silc.l"
 {return _LT;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 20 "./src/silc.l"
+#line 21 "./src/silc.l"
 {return _GT;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 21 "./src/silc.l"
+#line 22 "./src/silc.l"
 {return _LE;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 22 "./src/silc.l"
+#line 23 "./src/silc.l"
 {return _GE;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 23 "./src/silc.l"
+#line 24 "./src/silc.l"
 {return _EQ;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 24 "./src/silc.l"
+#line 25 "./src/silc.l"
 {return _NE;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 25 "./src/silc.l"
+#line 26 "./src/silc.l"
 {return _MOD;}
 	YY_BREAK
 case 14:
 /* rule 14 can match eol */
 YY_RULE_SETUP
-#line 27 "./src/silc.l"
+#line 28 "./src/silc.l"
 {}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 28 "./src/silc.l"
+#line 29 "./src/silc.l"
 {return *yytext;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 29 "./src/silc.l"
+#line 30 "./src/silc.l"
 {return *yytext;}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 30 "./src/silc.l"
+#line 31 "./src/silc.l"
 {return *yytext;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 31 "./src/silc.l"
+#line 32 "./src/silc.l"
 {return _END;}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 32 "./src/silc.l"
+#line 33 "./src/silc.l"
 {return _SEMI;}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 33 "./src/silc.l"
+#line 34 "./src/silc.l"
 {return _COMMA;}
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 34 "./src/silc.l"
+#line 35 "./src/silc.l"
 {return _BEGIN;}
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 35 "./src/silc.l"
+#line 36 "./src/silc.l"
 {return _READ;}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 36 "./src/silc.l"
+#line 37 "./src/silc.l"
 {return _WRITE;}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 37 "./src/silc.l"
+#line 38 "./src/silc.l"
 {return _Q;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 38 "./src/silc.l"
+#line 39 "./src/silc.l"
 {return _IF;}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 39 "./src/silc.l"
+#line 40 "./src/silc.l"
 {return _THEN;}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 40 "./src/silc.l"
+#line 41 "./src/silc.l"
 {return _DO;};
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 41 "./src/silc.l"
+#line 42 "./src/silc.l"
 {return _ENDIF;}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 42 "./src/silc.l"
+#line 43 "./src/silc.l"
 {return _WHILE;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 43 "./src/silc.l"
+#line 44 "./src/silc.l"
 {return _ENDWHILE;}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 44 "./src/silc.l"
+#line 45 "./src/silc.l"
 {return _ELSE;}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 45 "./src/silc.l"
+#line 46 "./src/silc.l"
 {return _BREAK;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 46 "./src/silc.l"
+#line 47 "./src/silc.l"
 {return _CONT;}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 47 "./src/silc.l"
+#line 48 "./src/silc.l"
 {return _DECL;}
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 48 "./src/silc.l"
+#line 49 "./src/silc.l"
 {return _ENDDECL;}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 49 "./src/silc.l"
+#line 50 "./src/silc.l"
 {return _INT;}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 50 "./src/silc.l"
+#line 51 "./src/silc.l"
 {return _STR;}
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 51 "./src/silc.l"
+#line 52 "./src/silc.l"
 {yylval.name = strdup(yytext); return _ID;}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 53 "./src/silc.l"
+#line 54 "./src/silc.l"
 ECHO;
 	YY_BREAK
-#line 984 "./src/silc.l.c"
+#line 1020 "./src/silc.l.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1349,6 +1385,10 @@ static int yy_get_next_buffer (void)
 
 	*--yy_cp = (char) c;
 
+    if ( c == '\n' ){
+        --yylineno;
+    }
+
 	(yytext_ptr) = yy_bp;
 	(yy_hold_char) = *yy_cp;
 	(yy_c_buf_p) = yy_cp;
@@ -1425,6 +1465,11 @@ static int yy_get_next_buffer (void)
 	c = *(unsigned char *) (yy_c_buf_p);	/* cast for 8-bit char's */
 	*(yy_c_buf_p) = '\0';	/* preserve yytext */
 	(yy_hold_char) = *++(yy_c_buf_p);
+
+	if ( c == '\n' )
+		
+    yylineno++;
+;
 
 	return c;
 }
@@ -1892,6 +1937,9 @@ static int yy_init_globals (void)
      * This function is called from yylex_destroy(), so don't allocate here.
      */
 
+    /* We do not touch yylineno unless the option is enabled. */
+    yylineno =  1;
+    
     (yy_buffer_stack) = NULL;
     (yy_buffer_stack_top) = 0;
     (yy_buffer_stack_max) = 0;
@@ -1986,7 +2034,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 53 "./src/silc.l"
+#line 54 "./src/silc.l"
 
 
 int yywrap(void) {
