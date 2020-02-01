@@ -52,7 +52,7 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
      | expr _MOD expr                                   {$$ = createNode(OP, "%", -1, $1, $3);}
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1; $$->vartype = INT;}
-     | _ID                                              {$$ = createVarNode($1, createNode(NUM, '\0', 0, NULL, NULL));}
+     | _ID                                              {$$ = createVarNode($1, createNode(CONST, '\0', 0, NULL, NULL));}
      | func                                             {$$ = $1;}
      | _ID '[' expr ']'                                 {$$ = createVarNode($1, $3);}
      | _TEXT                                            {$$ = $1; $$->vartype = STRING;}
@@ -62,14 +62,14 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
 func : _Q '(' expr ')'                                  {$$ = createNode(OP, "Q", -1, $3, NULL);}  
      ;
 
-read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createVarNode($3, createNode(NUM, '\0', 0, NULL, NULL)), NULL);}
+read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createVarNode($3, createNode(CONST, '\0', 0, NULL, NULL)), NULL);}
      | _READ '(' _ID '[' expr ']' ')' _SEMI             {$$ = createNode(READ, "", -1, createVarNode($3, $5), NULL);}
      
 
 write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
-assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createVarNode($1, createNode(NUM, '\0', 0, NULL, NULL)), $3);}
+assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createVarNode($1, createNode(CONST, '\0', 0, NULL, NULL)), $3);}
       | _ID '[' expr ']' _EQUALS expr _SEMI             {$$ = createNode(ASSN, "", -1, createVarNode($1, $3), $6);}
       ;
 

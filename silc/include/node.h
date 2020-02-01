@@ -2,20 +2,18 @@
 
 // TODO: set type to const and vartype to num
 enum TYPE {
-  NUM,
+  CONST,
   READ,
   WRITE,
   CONN,
   VAR,
   OP,
   ASSN,
-  QFUNC,
   IF,
   WHILE,
   IF_BODY,
   BREAK,
   CONT,
-  STR
 };
 enum VARTYPE { INT, BOOL, STRING };
 

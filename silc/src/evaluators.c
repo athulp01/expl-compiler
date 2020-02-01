@@ -4,31 +4,32 @@
 #include "register.h"
 #include "string.h"
 
-int yyerror(char *);
+int yyerror(char*);
 
 /* TODO: fImplement type checking, array bound checking */
 
-struct labelList *llist;
+struct labelList* llist;
 int curMemory = 4096;
 
-struct labelList *createLlistNode(int s, int e, struct labelList *root) {
-  struct labelList *tmp = (struct labelList *)malloc(sizeof(struct labelList));
+struct labelList* createLlistNode(int s, int e, struct labelList* root) {
+  struct labelList* tmp = (struct labelList*)malloc(sizeof(struct labelList));
   tmp->start_label = s;
   tmp->end_label = e;
   tmp->next = root;
-  if (root) root->prev = tmp;
+  if (root)
+    root->prev = tmp;
   return tmp;
 }
 
-struct varList *createVlistNode(char *name, int size, struct varList *root) {
-  struct varList *tmp = (struct varList *)malloc(sizeof(struct varList));
+struct varList* createVlistNode(char* name, int size, struct varList* root) {
+  struct varList* tmp = (struct varList*)malloc(sizeof(struct varList));
   tmp->name = name;
   tmp->size = size;
   tmp->next = root;
   return tmp;
 }
 
-struct labelList *deleteLlistNode(struct labelList *root) {
+struct labelList* deleteLlistNode(struct labelList* root) {
   if (root->next) {
     root->next->prev = NULL;
     return root->next;
@@ -36,10 +37,12 @@ struct labelList *deleteLlistNode(struct labelList *root) {
     return NULL;
 }
 
-struct symbolList *createSlistNode(char *name, enum VARTYPE type, int size,
-                                   struct symbolList *next) {
-  struct symbolList *tmp =
-      (struct symbolList *)malloc(sizeof(struct symbolList));
+struct symbolList* createSlistNode(char* name,
+                                   enum VARTYPE type,
+                                   int size,
+                                   struct symbolList* next) {
+  struct symbolList* tmp =
+      (struct symbolList*)malloc(sizeof(struct symbolList));
   tmp->name = name;
   tmp->type = type;
   tmp->size = size;
@@ -52,7 +55,7 @@ struct symbolList *createSlistNode(char *name, enum VARTYPE type, int size,
   return tmp;
 }
 
-struct symbolList *searchSlist(char *name, struct symbolList *root) {
+struct symbolList* searchSlist(char* name, struct symbolList* root) {
   while (root) {
     if (strcmp(root->name, name) == 0) {
       return root;
@@ -62,8 +65,9 @@ struct symbolList *searchSlist(char *name, struct symbolList *root) {
   return NULL;
 }
 
-void eval_tree(tnode *root, FILE *out) {
-  if (root == NULL) return;
+void eval_tree(tnode* root, FILE* out) {
+  if (root == NULL)
+    return;
   eval_tree(root->left, out);
   switch (root->type) {
     case READ:
@@ -92,12 +96,16 @@ void eval_tree(tnode *root, FILE *out) {
   return;
 }
 
-reg_index eval_expr(struct tnode *root, FILE *out) {
-  if (root == NULL) return 0;
+reg_index eval_expr(struct tnode* root, FILE* out) {
+  if (root == NULL)
+    return 0;
+
   reg_index cur = getReg();
-  if (root->type == NUM) {
-    fprintf(out, "MOV R%d, %d\n", cur, root->val);
-    root->vartype = INT;
+  if (root->type == CONST) {
+    if (root->vartype == INT)
+      fprintf(out, "MOV R%d, %d\n", cur, root->val);
+    else if (root->vartype == STRING)
+      fprintf(out, "MOV R%d, %d\n", cur, root->varname);
     return cur;
   } else if (root->type == VAR) {
     reg_index num = getReg();
@@ -107,9 +115,6 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
     freeReg();
     freeReg();
     return cur;
-  } else if (root->type == STR) {
-    fprintf(out, "MOV R%d, %s\n", cur, root->varname);
-    return cur;
   }
   freeReg();
 
@@ -117,7 +122,11 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
   reg_index right = eval_expr(root->right, out);
 
   if (root->type == OP) {
-    if ((root->left->vartype == NUM && root->right->vartype == NUM)) {
+    if (root->left->vartype != root->right->vartype) {
+      yyerror("Type mismatch");
+    }
+
+    if (root->right->vartype == INT) {
       if (!strcmp(root->varname, "+")) {
         fprintf(out, "ADD R%d, R%d\n", left, right);
         root->vartype = INT;
@@ -131,9 +140,12 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
         fprintf(out, "DIV R%d, R%d\n", left, right);
         root->vartype = INT;
       }
-    } else if (((root->left->symbol->type == root->right->vartype) &&
-                root->right->vartype != BOOL)) {
+    } 
+
+    // Compare operators for type string and int
+    if (root->right->vartype != BOOL) {
       if (!strcmp(root->varname, "<")) {
+        printf("fdfa");
         fprintf(out, "LT R%d, R%d\n", left, right);
         root->vartype = BOOL;
       } else if (!strcmp(root->varname, ">")) {
@@ -158,17 +170,16 @@ reg_index eval_expr(struct tnode *root, FILE *out) {
         fprintf(out, "MOD R%d, R%d\n", left, right);
         root->vartype = INT;
       }
-    } else {
-      yyerror("Type mismatch");
-    }
-  }
+    } 
   freeReg();
+  }
   return left;
 }
 
-void eval_write(tnode *root, FILE *out) {
+void eval_write(tnode* root, FILE* out) {
   pushToStack(out);
   reg_index writereg = getReg(), tmp = getReg();
+
   if (root->left->type == OP) {
     fprintf(out, "MOV R%d, R%d\n", writereg, eval_expr(root->left, out));
     freeReg();
@@ -177,9 +188,7 @@ void eval_write(tnode *root, FILE *out) {
             root->left->symbol->binding, tmp, eval_expr(root->left->left, out));
     fprintf(out, "MOV R%d, [R%d]\n", writereg, tmp);
     freeReg();
-  } else if (root->left->type == NUM) {
-    fprintf(out, "MOV R%d, %d\n", writereg, root->left->val);
-  } else if (root->left->type == STR) {
+  } else if (root->left->type == CONST) {
     fprintf(out, "MOV R%d, R%d\n", writereg, eval_expr(root->left, out));
     freeReg();
   }
@@ -194,7 +203,7 @@ void eval_write(tnode *root, FILE *out) {
   getFromStack(out);
 }
 
-void eval_read(tnode *root, FILE *out) {
+void eval_read(tnode* root, FILE* out) {
   pushToStack(out);
   reg_index mem = getReg();
   reg_index comm = getReg();
@@ -211,7 +220,7 @@ void eval_read(tnode *root, FILE *out) {
   getFromStack(out);
 }
 
-void eval_assgn(tnode *root, FILE *out) {
+void eval_assgn(tnode* root, FILE* out) {
   if (root->right->type == VAR) {
     if (root->right->symbol->type != root->left->symbol->type) {
       yyerror("Type mismatch");
@@ -244,33 +253,20 @@ void eval_assgn(tnode *root, FILE *out) {
     freeReg();
     freeReg();
     return;
-  } else if (root->right->type == NUM) {
-    if (root->right->vartype != root->left->symbol->type) {
-      yyerror("Type mismatch");
-    }
-    reg_index tmp = getReg();
-    reg_index mem = getReg();
-    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem,
-            root->left->symbol->binding, mem, eval_expr(root->left->left, out));
-    fprintf(out, "MOV R%d, %d\nMOV [R%d], R%d\n", tmp, root->right->val, mem,
-            tmp);
-    freeReg();
-    freeReg();
-    freeReg();
-    return;
-  } else if (root->right->type == STR) {
+  } else if (root->right->type == CONST) {
     if (root->right->vartype != root->left->symbol->type) {
       yyerror("Type mismatch");
     }
     reg_index mem = getReg();
     fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem,
             root->left->symbol->binding, mem, eval_expr(root->left->left, out));
+    freeReg();
     fprintf(out, "MOV [R%d], R%d\n", mem, eval_expr(root->right, out));
     freeReg();
     freeReg();
   }
 }
-void eval_if(tnode *root, FILE *out) {
+void eval_if(tnode* root, FILE* out) {
   reg_index res = eval_expr(root->left, out);
   if (root->right->right) {
     int start = getLabel(), end = getLabel();
@@ -290,7 +286,7 @@ void eval_if(tnode *root, FILE *out) {
   }
 }
 
-void eval_while(tnode *root, FILE *out) {
+void eval_while(tnode* root, FILE* out) {
   int loop_start = getLabel(), loop_end = getLabel();
   llist = createLlistNode(loop_start, loop_end, llist);
   fprintf(out, "L%d:\n", loop_start);
@@ -303,8 +299,8 @@ void eval_while(tnode *root, FILE *out) {
   llist = deleteLlistNode(llist);
 }
 
-reg_index eval_qfunc(struct tnode *root, FILE *out) {
-  char *label = "L1";
+reg_index eval_qfunc(struct tnode* root, FILE* out) {
+  char* label = "L1";
   reg_index answer = getReg();
   reg_index one = getReg();
   reg_index tmp = getReg();
@@ -320,14 +316,14 @@ reg_index eval_qfunc(struct tnode *root, FILE *out) {
   return answer;
 }
 
-void eval_break(FILE *out) {
+void eval_break(FILE* out) {
   if (llist) {
     fprintf(out, "JMP L%d\n", llist->end_label);
     deleteLlistNode(llist);
   }
 }
 
-void eval_cont(FILE *out) {
+void eval_cont(FILE* out) {
   if (llist) {
     fprintf(out, "JMP L%d\n", llist->start_label);
     deleteLlistNode(llist);

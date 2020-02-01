@@ -1627,7 +1627,7 @@ yyreduce:
 
   case 16:
 #line 55 "./src/silc.y"
-    {(yyval.no) = createVarNode((yyvsp[0].name), createNode(NUM, '\0', 0, NULL, NULL));}
+    {(yyval.no) = createVarNode((yyvsp[0].name), createNode(CONST, '\0', 0, NULL, NULL));}
 #line 1632 "./src/y.tab.c"
     break;
 
@@ -1657,7 +1657,7 @@ yyreduce:
 
   case 21:
 #line 65 "./src/silc.y"
-    {(yyval.no) = createNode(READ, "", -1, createVarNode((yyvsp[-2].name), createNode(NUM, '\0', 0, NULL, NULL)), NULL);}
+    {(yyval.no) = createNode(READ, "", -1, createVarNode((yyvsp[-2].name), createNode(CONST, '\0', 0, NULL, NULL)), NULL);}
 #line 1662 "./src/y.tab.c"
     break;
 
@@ -1675,7 +1675,7 @@ yyreduce:
 
   case 24:
 #line 72 "./src/silc.y"
-    {(yyval.no) = createNode(ASSN, "", -1, createVarNode((yyvsp[-3].name), createNode(NUM, '\0', 0, NULL, NULL)), (yyvsp[-1].no));}
+    {(yyval.no) = createNode(ASSN, "", -1, createVarNode((yyvsp[-3].name), createNode(CONST, '\0', 0, NULL, NULL)), (yyvsp[-1].no));}
 #line 1680 "./src/y.tab.c"
     break;
 

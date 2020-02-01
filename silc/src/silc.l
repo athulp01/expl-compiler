@@ -11,7 +11,7 @@
 %}
 
 %%
-[0-9]+	{number = atoi(yytext); yylval.no = createNode(NUM, "\0", number, NULL, NULL); return _NUM;}
+[0-9]+	{number = atoi(yytext); yylval.no = createNode(CONST, "\0", number, NULL, NULL); return _NUM;}
 "+"	{return _PLUS;}
 "-"	{return _MINUS;}
 "*"	{return _MUL;}
@@ -50,7 +50,7 @@
 "int"	{return _INT;}
 "str" {return _STR;}
 [a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
-\"(\\.|[^"\\])*\" {yylval.no = createNode(STR, strdup(yytext), -1, NULL, NULL); return _TEXT;}
+\"(\\.|[^"\\])*\" {yylval.no = createNode(CONST, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 
 %%
 

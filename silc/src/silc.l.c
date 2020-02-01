@@ -830,7 +830,7 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 YY_RULE_SETUP
 #line 14 "./src/silc.l"
-{number = atoi(yytext); yylval.no = createNode(NUM, "\0", number, NULL, NULL); return _NUM;}
+{number = atoi(yytext); yylval.no = createNode(CONST, "\0", number, NULL, NULL); return _NUM;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
@@ -1022,7 +1022,7 @@ case 39:
 /* rule 39 can match eol */
 YY_RULE_SETUP
 #line 53 "./src/silc.l"
-{yylval.no = createNode(STR, strdup(yytext), -1, NULL, NULL); return _TEXT;}
+{yylval.no = createNode(CONST, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
