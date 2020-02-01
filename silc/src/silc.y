@@ -16,8 +16,8 @@
     struct varList *var;
 	
 }
-%type <no> expr _NUM _END read write stmt stmtList assgn func ifstmt whilestmt break cont
-%type <name> _ID _TEXT 
+%type <no> expr _NUM _END read write stmt stmtList assgn func ifstmt whilestmt break cont _TEXT 
+%type <name> _ID 
 %type <type> type
 %type <var> varlist
 

@@ -1,36 +1,36 @@
 #pragma once
 #include <stdio.h>
-#include "node.h"
-#include "register.h"
 #include <stdlib.h>
 
+#include "node.h"
+#include "register.h"
+
 extern int loop_start, loop_end;
-extern struct symbolList *globalSym;
+extern struct symbolList* globalSym;
 
-
-struct labelList{
-    int start_label;
-    int end_label;
-    struct labelList *next, *prev;
+struct labelList {
+  int start_label;
+  int end_label;
+  struct labelList *next, *prev;
 };
 
-struct symbolList{
-    char *name;
-    enum VARTYPE type;
-    int size;
-    int binding;
-    struct symbolList *next;
+struct symbolList {
+  char* name;
+  enum VARTYPE type;
+  int size;
+  int binding;
+  struct symbolList* next;
 };
 
-struct varList{
-    char *name;
-    int size;
-    struct varList *next;
+struct varList {
+  char* name;
+  int size;
+  struct varList* next;
 };
 
-
-struct symbolList* createSlistNode(char*, enum VARTYPE, int, struct symbolList*);
-struct symbolList* searchSlist(char* ,struct symbolList*);
+struct symbolList* createSlistNode(char*, enum VARTYPE, int,
+                                   struct symbolList*);
+struct symbolList* searchSlist(char*, struct symbolList*);
 
 struct labelList* createLlistNode(int, int, struct labelList*);
 struct labelList* deleteLlistNode(struct labelList*);

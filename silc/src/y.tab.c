@@ -1645,7 +1645,7 @@ yyreduce:
 
   case 19:
 #line 58 "./src/silc.y"
-    {(yyval.no) = (yyvsp[0].name); (yyval.no)->vartype = STRING;}
+    {(yyval.no) = (yyvsp[0].no); (yyval.no)->vartype = STRING;}
 #line 1650 "./src/y.tab.c"
     break;
 
