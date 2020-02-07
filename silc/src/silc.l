@@ -2,10 +2,10 @@
 %{ 
     #include <stdlib.h>
 	#include <stdio.h>
+	#include "datastructures.h"
 	#include "silc.h"
-	#include  "node.h"
+	
 	int number;
-	int yyerror(char *);
 	char c;
 
 %}
@@ -25,8 +25,10 @@
 "!=" {return _NE;}
 "%"	{return _MOD;}
 
-[\n \t]	{}
+[ \t]	{}
+[\n] 	{}
 [()]	{return *yytext;}
+[{}]	{return *yytext;}
 "[" {return *yytext;}
 "]"	{return *yytext;}
 "end" {return _END;}
@@ -49,6 +51,8 @@
 "enddecl"	{return _ENDDECL;}
 "int"	{return _INT;}
 "str" {return _STR;}
+"main" {return _MAIN;}
+"return" {return _RET;}
 [a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
 \"(\\.|[^"\\])*\" {yylval.no = createNode(CONST, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 
@@ -56,4 +60,10 @@
 
 int yywrap(void) {
 	return 1;
+}
+
+int yyerror(char const *s)
+{
+    printf("Line %d: | Syntax Error: %s \n",yylineno, s);
+    exit(1);
 }

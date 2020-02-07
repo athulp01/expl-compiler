@@ -3,6 +3,7 @@
         "./include/"
     ],
     "files.associations": {
-        "register.h": "c"
+        "register.h": "c",
+        "evaluators.h": "c"
     },
 }

@@ -1,89 +1,36 @@
 #include "evaluators.h"
-
-#include "node.h"
-#include "register.h"
+#include "datastructures.h"
 #include "string.h"
 
 int yyerror(char*);
 
 /* TODO: fImplement type checking, array bound checking */
 
-struct labelList* llist;
+LabelList* llist;
 int curMemory = 4096;
+LinkedList *GSymList;
 
-struct labelList* createLlistNode(int s, int e, struct labelList* root) {
-  struct labelList* tmp = (struct labelList*)malloc(sizeof(struct labelList));
-  tmp->start_label = s;
-  tmp->end_label = e;
-  tmp->next = root;
-  if (root)
-    root->prev = tmp;
-  return tmp;
-}
 
-struct varList* createVlistNode(char* name, int size, struct varList* root) {
-  struct varList* tmp = (struct varList*)malloc(sizeof(struct varList));
-  tmp->name = name;
-  tmp->size = size;
-  tmp->next = root;
-  return tmp;
-}
-
-struct labelList* deleteLlistNode(struct labelList* root) {
-  if (root->next) {
-    root->next->prev = NULL;
-    return root->next;
-  } else
-    return NULL;
-}
-
-struct symbolList* createSlistNode(char* name,
-                                   enum VARTYPE type,
-                                   int size,
-                                   struct symbolList* next) {
-  struct symbolList* tmp =
-      (struct symbolList*)malloc(sizeof(struct symbolList));
-  tmp->name = name;
-  tmp->type = type;
-  tmp->size = size;
-  tmp->binding = curMemory;
-  if (size == 0)
-    curMemory++;
-  else
-    curMemory += size;
-  tmp->next = next;
-  return tmp;
-}
-
-struct symbolList* searchSlist(char* name, struct symbolList* root) {
-  while (root) {
-    if (strcmp(root->name, name) == 0) {
-      return root;
-    }
-    root = root->next;
-  }
-  return NULL;
-}
-
-void eval_tree(tnode* root, FILE* out) {
+//Evaluates a tree by calling the respective functions according to node type
+void eval_tree(tnode* root, Frame *frame, FILE* out) {
   if (root == NULL)
     return;
-  eval_tree(root->left, out);
+  eval_tree(root->left, frame, out);
   switch (root->type) {
     case READ:
-      eval_read(root, out);
+      eval_read(root, frame, out);
       break;
     case WRITE:
-      eval_write(root, out);
+      eval_write(root, frame, out);
       break;
     case ASSN:
-      eval_assgn(root, out);
-      break;
+      eval_assgn(root, frame, out);
+      return;
     case IF:
-      eval_if(root, out);
+      eval_if(root, frame, out);
       return;
     case WHILE:
-      eval_while(root, out);
+      eval_while(root, frame, out);
       return;
     case BREAK:
       eval_break(out);
@@ -91,16 +38,23 @@ void eval_tree(tnode* root, FILE* out) {
     case CONT:
       eval_cont(out);
       break;
+    case RET:
+      eval_return(root, frame, out);
+      break;
+    case FUNC:
+      call_func(root, frame, out);
+      freeReg(frame);
   }
-  eval_tree(root->right, out);
+  eval_tree(root->right, frame, out);
   return;
 }
 
-reg_index eval_expr(struct tnode* root, FILE* out) {
+//Evaluates a expression and returns the register where the result is stord
+reg_index eval_expr(tnode* root,Frame *frame, FILE* out) {
   if (root == NULL)
     return 0;
 
-  reg_index cur = getReg();
+  reg_index cur = getReg(frame);
   if (root->type == CONST) {
     if (root->vartype == INT)
       fprintf(out, "MOV R%d, %d\n", cur, root->val);
@@ -108,18 +62,38 @@ reg_index eval_expr(struct tnode* root, FILE* out) {
       fprintf(out, "MOV R%d, %d\n", cur, root->varname);
     return cur;
   } else if (root->type == VAR) {
-    reg_index num = getReg();
-    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", num, root->symbol->binding, num,
-            eval_expr(root->left, out));
-    fprintf(out, "MOV R%d, [R%d]\n", cur, num);
-    freeReg();
-    freeReg();
-    return cur;
+    int binding;
+    LSymbol *sym = searchSymbol(root->varname, frame->Lvars);
+    if(sym) {
+      binding = sym->binding;
+      reg_index tmp = getReg(frame);
+      fprintf(out, "MOV R%d, BP\nADD R%d, %d\n",tmp, tmp, binding);
+      fprintf(out, "MOV R%d, [R%d]\n", cur, tmp);
+      freeReg(frame);
+      return cur;
+    } else {
+      sym = searchSymbol(root->varname, GSymList);
+      if(sym) {
+        binding = sym->binding;
+        reg_index num = getReg(frame);
+        fprintf(out,"MOV R%d, %d\n", num, binding);
+        if(root->left)
+          fprintf(out, "ADD R%d, R%d\n", num, eval_expr(root->left, frame, out));
+        fprintf(out, "MOV R%d, [R%d]\n", cur, num);
+        freeReg(frame);
+        freeReg(frame);
+        return cur;
+      }else {
+        yyerror("Undefined variable");
+      }
+    }
+  }else if (root->type == FUNC) {
+    return call_func(root, frame, out);
   }
-  freeReg();
+  freeReg(frame);
 
-  reg_index left = eval_expr(root->left, out);
-  reg_index right = eval_expr(root->right, out);
+  reg_index left = eval_expr(root->left, frame, out);
+  reg_index right = eval_expr(root->right, frame, out);
 
   if (root->type == OP) {
     if (root->left->vartype != root->right->vartype) {
@@ -145,7 +119,6 @@ reg_index eval_expr(struct tnode* root, FILE* out) {
     // Compare operators for type string and int
     if (root->right->vartype != BOOL) {
       if (!strcmp(root->varname, "<")) {
-        printf("fdfa");
         fprintf(out, "LT R%d, R%d\n", left, right);
         root->vartype = BOOL;
       } else if (!strcmp(root->varname, ">")) {
@@ -163,158 +136,99 @@ reg_index eval_expr(struct tnode* root, FILE* out) {
       } else if (!strcmp(root->varname, "!=")) {
         fprintf(out, "NE R%d, R%d\n", left, right);
         root->vartype = BOOL;
-      } else if (!strcmp(root->varname, "Q")) {
-        root->vartype = INT;
-        return eval_qfunc(root, out);
       } else if (!strcmp(root->varname, "%")) {
         fprintf(out, "MOD R%d, R%d\n", left, right);
         root->vartype = INT;
       }
     } 
-  freeReg();
+  freeReg(frame);
   }
   return left;
 }
 
-void eval_write(tnode* root, FILE* out) {
-  pushToStack(out);
-  reg_index writereg = getReg(), tmp = getReg();
-
-  if (root->left->type == OP) {
-    fprintf(out, "MOV R%d, R%d\n", writereg, eval_expr(root->left, out));
-    freeReg();
-  } else if (root->left->type == VAR) {
-    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", tmp,
-            root->left->symbol->binding, tmp, eval_expr(root->left->left, out));
-    fprintf(out, "MOV R%d, [R%d]\n", writereg, tmp);
-    freeReg();
-  } else if (root->left->type == CONST) {
-    fprintf(out, "MOV R%d, R%d\n", writereg, eval_expr(root->left, out));
-    freeReg();
-  }
-
+void eval_write(tnode* root, Frame *frame, FILE* out) {
+  pushRegToStack(frame,out);
+  reg_index tmp = getReg(frame);
+  reg_index writereg = eval_expr(root->left, frame, out);
   fprintf(out, "MOV R%d, \"Write\"\nPUSH R%d\nMOV R%d, -2\nPUSH R%d\n", tmp,
           tmp, tmp, tmp);
   fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\n", writereg, tmp, tmp);
   fprintf(out, "CALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n",
           writereg, tmp, tmp, tmp, tmp);
-  freeReg();
-  freeReg();
-  getFromStack(out);
+  freeReg(frame);
+  freeReg(frame);
+  getRegFromStack(frame,out);
 }
 
-void eval_read(tnode* root, FILE* out) {
-  pushToStack(out);
-  reg_index mem = getReg();
-  reg_index comm = getReg();
-  fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem, root->left->symbol->binding,
-          mem, eval_expr(root->left->left, out));
-  freeReg();
+void eval_read(tnode* root, Frame *frame, FILE* out) {
+  pushRegToStack(frame,out);
+  reg_index mem = eval_expr(root->left, frame, out);
+  reg_index comm = getReg(frame);
   fprintf(out, "MOV R%d, \"Read\"\nPUSH R%d\nMOV R%d, -1\n", comm, comm, comm);
   fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", comm, mem, comm,
           comm);
   fprintf(out, "CALL 0\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", mem,
           comm, comm, comm, comm);
-  freeReg();
-  freeReg();
-  getFromStack(out);
+  freeReg(frame);
+  freeReg(frame);
+  getRegFromStack(frame,out);
 }
 
-void eval_assgn(tnode* root, FILE* out) {
-  if (root->right->type == VAR) {
-    if (root->right->symbol->type != root->left->symbol->type) {
-      yyerror("Type mismatch");
+void eval_assgn(tnode* root, Frame *frame, FILE* out) {
+  LSymbol *sym = (LSymbol*)searchSymbol(root->left->varname, frame->Lvars);
+  reg_index binding = getReg(frame);
+  if(sym) {
+    fprintf(out, "MOV R%d, BP\nADD R%d, %d\n",binding, binding, sym->binding);
+  }else {
+    GSymbol *sym = (GSymbol*)searchSymbol(root->left->varname, GSymList);
+    if(sym) {
+      fprintf(out,"MOV R%d, %d\n", binding, sym->binding);
+      if(root->left)
+        fprintf(out, "ADD R%d, R%d\n", binding, eval_expr(root->left, frame, out));
+        freeReg(frame);
+    }else {
+      yyerror("Variable not found");
     }
-    reg_index left = getReg(), right = getReg(), tmp = getReg();
-    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", left,
-            root->left->symbol->binding, left,
-            eval_expr(root->left->left, out));
-    freeReg();
-    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", right,
-            root->right->symbol->binding, right,
-            eval_expr(root->right->left, out));
-    freeReg();
-    fprintf(out, "MOV R%d, [R%d]\n", tmp, right);
-    fprintf(out, "MOV [R%d], R%d\n", left, tmp);
-    freeReg();
-    freeReg();
-    freeReg();
-    return;
-  } else if (root->right->type == OP) {
-    if (root->right->vartype != root->left->symbol->type) {
-      yyerror("Type mismatch");
-    }
-    reg_index left = getReg();
-    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", left,
-            root->left->symbol->binding, left,
-            eval_expr(root->left->left, out));
-    freeReg();
-    fprintf(out, "MOV [R%d], R%d\n", left, eval_expr(root->right, out));
-    freeReg();
-    freeReg();
-    return;
-  } else if (root->right->type == CONST) {
-    if (root->right->vartype != root->left->symbol->type) {
-      yyerror("Type mismatch");
-    }
-    reg_index mem = getReg();
-    fprintf(out, "MOV R%d, %d\nADD R%d, R%d\n", mem,
-            root->left->symbol->binding, mem, eval_expr(root->left->left, out));
-    freeReg();
-    fprintf(out, "MOV [R%d], R%d\n", mem, eval_expr(root->right, out));
-    freeReg();
-    freeReg();
   }
+  reg_index right = eval_expr(root->right, frame, out);
+  fprintf(out, "MOV [R%d], R%d\n", binding, right);
+  freeReg(frame);
+  freeReg(frame);
 }
-void eval_if(tnode* root, FILE* out) {
-  reg_index res = eval_expr(root->left, out);
+
+void eval_if(tnode* root, Frame *frame, FILE* out) {
+  reg_index res = eval_expr(root->left, frame, out);
   if (root->right->right) {
     int start = getLabel(), end = getLabel();
     fprintf(out, "JZ R%d, L%d\n", res, start);
-    freeReg();
-    eval_tree(root->right->left, out);
+    freeReg(frame);
+    eval_tree(root->right->left, frame, out);
     fprintf(out, "JMP L%d\n", end);
     fprintf(out, "L%d:\n", start);
-    eval_tree(root->right->right, out);
+    eval_tree(root->right->right, frame, out);
     fprintf(out, "L%d:\n", end);
   } else {
     int end = getLabel();
     fprintf(out, "JZ R%d, L%d\n", res, end);
-    freeReg();
-    eval_tree(root->right->left, out);
+    freeReg(frame);
+    eval_tree(root->right->left, frame, out);
     fprintf(out, "L%d:\n", end);
   }
 }
 
-void eval_while(tnode* root, FILE* out) {
+void eval_while(tnode* root, Frame *frame, FILE* out) {
   int loop_start = getLabel(), loop_end = getLabel();
   llist = createLlistNode(loop_start, loop_end, llist);
   fprintf(out, "L%d:\n", loop_start);
-  reg_index res = eval_expr(root->left, out);
+  reg_index res = eval_expr(root->left, frame, out);
   fprintf(out, "JZ R%d, L%d\n", res, loop_end);
-  freeReg();
-  eval_tree(root->right, out);
+  freeReg(frame);
+  eval_tree(root->right, frame, out);
   fprintf(out, "JMP L%d\n", loop_start);
   fprintf(out, "L%d:\n", loop_end);
   llist = deleteLlistNode(llist);
 }
 
-reg_index eval_qfunc(struct tnode* root, FILE* out) {
-  char* label = "L1";
-  reg_index answer = getReg();
-  reg_index one = getReg();
-  reg_index tmp = getReg();
-  reg_index input = getReg();
-  fprintf(out, "MOV R%d, 1\nMOV R%d, -1\n", one, answer);
-  fprintf(out, "MOV R%d, %d\n", input, root->left->val);
-  fprintf(out, "%s:\nINR R%d\nDIV R%d, 2\nMOV R%d, R%d\nEQ R%d, R%d\n", label,
-          answer, input, tmp, input, tmp, one);
-  fprintf(out, "JZ R%d, %s\nINR R%d\n", tmp, label, answer);
-  freeReg();
-  freeReg();
-  freeReg();
-  return answer;
-}
 
 void eval_break(FILE* out) {
   if (llist) {
@@ -328,4 +242,92 @@ void eval_cont(FILE* out) {
     fprintf(out, "JMP L%d\n", llist->start_label);
     deleteLlistNode(llist);
   }
+}
+
+reg_index call_func(tnode* root, Frame *frame, FILE *out) {
+  pushRegToStack(frame, out);
+  pushArgToStack(root->left, frame, out);
+  reg_index tmp = getReg(frame);
+  fprintf(out, "PUSH R%d\n", tmp);
+  freeReg(frame);
+  fprintf(out, "CALL %s\n", root->varname);
+  tmp = getReg(frame);
+  fprintf(out, "POP R%d \\return\n", tmp);
+  popArgFromStack(root->left, frame,  out);
+  getRegFromStack(frame, out);
+  return tmp;
+}
+
+void eval_func(tnode* root, FILE* out) {
+// create a frame for the function
+  GSymbol *sym = (GSymbol*)searchSymbol(root->varname, GSymList);
+  Frame *frame = (Frame*)malloc(sizeof(Frame));
+  frame->Lvars = copyList(sym->frame->Lvars, sizeof(LSymbol));
+
+/* PUSH the current base pointer and set it as the current stack pointer */
+  fprintf(out, "PUSH BP\nMOV BP, SP\n");
+// create a space for local variables in the stack and set the binding
+  LinkedList* list = frame->Lvars;
+  int count = 1;
+  reg_index tmp = getReg(frame);
+  while(list) {
+    ((LSymbol*)list->data)->binding = count++;
+    list = list->next;
+    fprintf(out, "PUSH R%d \\local variables\n", tmp);  //push a free space for the variable
+  }
+  freeReg(frame);
+  addArgSymbol(root->right, frame, -3, out);
+  eval_tree(root->left, frame, out);
+}
+// Do a inorder traversal and set the binding of the function arguments
+void pushArgToStack(tnode* root, Frame* frame, FILE* out) {
+  if(root == NULL) return;
+  if(root->type == CONN) {
+    pushArgToStack(root->left, frame, out);
+    pushArgToStack(root->right, frame, out);
+    return;
+  }
+  reg_index value = eval_expr(root, frame, out);
+  fprintf(out, "PUSH R%d \\Argument\n", value);
+  freeReg(frame);
+  return ;
+}
+
+int addArgSymbol(tnode* root, Frame* frame, int mem, FILE* out) {
+  if(root == NULL) return mem;
+  int left =addArgSymbol(root->left, frame, mem, out);
+  LSymbol *tmp = malloc(sizeof(LSymbol));
+  *tmp = (LSymbol){.name=root->varname, .type=root->vartype, .binding=left--};
+  frame->Lvars = addNode(tmp, sizeof(LSymbol), frame->Lvars);
+  int right = addArgSymbol(root->right, frame, left, out);
+  return right;
+}
+
+//pop all the arg from the stack
+void popArgFromStack(tnode *root, Frame *frame, FILE *out) {
+  if(root == NULL) return;
+  if(root->type == CONN) {
+    pushArgToStack(root->left, frame, out);
+    pushArgToStack(root->right, frame, out);
+    return;
+  }
+  reg_index value = getReg(frame);
+  fprintf(out, "POP R%d \\Argument\n", value);
+  freeReg(frame);
+  return ;
+}
+
+void eval_return(tnode *root, Frame *frame, FILE *out) {
+  reg_index result = eval_expr(root->left, frame, out);
+  reg_index tmp = getReg(frame);
+  fprintf(out, "MOV R%d, BP\nADD R%d, -2\nMOV [R%d], R%d\n", tmp,tmp, tmp, result);
+  freeReg(frame);
+  LinkedList *list = frame->Lvars;
+  while(list) {
+    if(((LSymbol*)list->data)->binding >=0 )
+      fprintf(out, "POP R%d \\local varibales\n", tmp);  
+    list = list->next;
+  }
+  fprintf(out, "POP R%d\nMOV BP, R%d\nRET\n", tmp, tmp);
+  freeReg(frame);
 }

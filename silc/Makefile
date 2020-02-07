@@ -1,4 +1,4 @@
 all:
 	yacc --defines=./include/silc.h  --output=./src/y.tab.c ./src/silc.y
 	flex -o ./src/silc.l.c ./src/silc.l
-	gcc -g ./src/silc.l.c ./src/node.c ./src/register.c ./src/y.tab.c  ./src/evaluators.c -I ./include -o silc
+	gcc -g ./src/datastructures.c  ./src/silc.l.c  ./src/y.tab.c  ./src/evaluators.c -I ./include -o silc

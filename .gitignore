@@ -1,2 +1,8 @@
 silcnitc.github.io
 .out
+vscode.code-workspace
+silc/.vscode/launch.json
+silc/.vscode/settings.json
+xsm_expl/xfs-interface/disk.xfs
+
+xsm_expl/xsm_dev/mem

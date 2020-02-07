@@ -23,9 +23,11 @@
     }
 %}
 
-label ^[a-zA-Z0-9]+[:](\n)
+label [a-zA-Z0-9]+[:](\n)
 branch1 ("JZ"|"JNZ")[' ']+[R][0-9]+[,][' ']*[a-zA-Z0-9]+
 branch2 ("JMP")[' ']+[a-zA-Z0-9]+
+branch3 ("CALL")[' '][a-zA-Z]+
+start ("START")
 
 %%
 [\n]    {curMem += 2;}
@@ -91,6 +93,46 @@ branch2 ("JMP")[' ']+[a-zA-Z0-9]+
                     exit(1);
                 }
 
+            }
+}
+
+{branch3} {
+
+            if(pass == 2) {
+                fprintf(translated, "CALL");
+                int found = 0;
+                struct labelNode* tmp = head;
+                while(tmp) {
+                    if(strcmp(tmp->label, yytext+5) == 0) {
+                        fprintf(translated, " %d\n", tmp->mem);
+                        found = 1;
+                        break;
+                    }
+                    tmp = tmp->next;
+                }
+                if(!found) {
+                    printf("Label not found\n");
+                    exit(1);
+                }
+            }
+}
+{start} {
+
+            if(pass == 2) {
+                int found = 0;
+                struct labelNode* tmp = head;
+                while(tmp) {
+                    if(strcmp(tmp->label, "main") == 0) {
+                        fprintf(translated, "%d\n", tmp->mem);
+                        found = 1;
+                        break;
+                    }
+                    tmp = tmp->next;
+                }
+                if(!found) {
+                    printf("Label not found\n");
+                    exit(1);
+                }
             }
 }
 

@@ -2,48 +2,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "node.h"
-#include "register.h"
+#include "datastructures.h"
+
 
 extern int loop_start, loop_end;
-extern struct symbolList* globalSym;
+extern struct GSymbol* globalSym;
 
-struct labelList {
-  int start_label;
-  int end_label;
-  struct labelList *next, *prev;
-};
 
-struct symbolList {
-  char* name;
-  enum VARTYPE type;
-  int size;
-  int binding;
-  struct symbolList* next;
-};
 
-struct varList {
-  char* name;
-  int size;
-  struct varList* next;
-};
-
-struct symbolList* createSlistNode(char*, enum VARTYPE, int,
-                                   struct symbolList*);
-struct symbolList* searchSlist(char*, struct symbolList*);
-
-struct labelList* createLlistNode(int, int, struct labelList*);
-struct labelList* deleteLlistNode(struct labelList*);
-
-struct varList* createVlistNode(char*, int, struct varList*);
-
-void eval_tree(tnode*, FILE*);
-reg_index eval_expr(tnode*, FILE*);
-void eval_read(tnode*, FILE*);
-void eval_write(tnode*, FILE*);
-void eval_assgn(tnode*, FILE*);
-void eval_if(tnode*, FILE*);
-void eval_while(tnode*, FILE*);
-reg_index eval_qfunc(tnode*, FILE*);
+void eval_tree(tnode*, Frame*, FILE*);
+reg_index eval_expr(tnode*, Frame*, FILE*);
+void eval_read(tnode*, Frame*, FILE*);
+void eval_write(tnode*,Frame*, FILE*);
+void eval_assgn(tnode*,Frame*, FILE*);
+void eval_if(tnode*,Frame*, FILE*);
+void eval_while(tnode*,Frame*, FILE*);
 void eval_break(FILE*);
 void eval_cont(FILE*);
+void eval_func(tnode* root, FILE* out);
+reg_index call_func(tnode* root, Frame *frame, FILE *out);
+void popArgFromStack(tnode *root, Frame*, FILE *out) ;
+void eval_return(tnode *root, Frame *frame, FILE *out);
+void pushArgToStack(tnode* root, Frame* frame, FILE* out);
+int addArgSymbol(tnode* root, Frame* frame, int mem, FILE* out);
