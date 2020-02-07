@@ -5,8 +5,24 @@
     #include <string.h>
     #include "datastructures.h"
 	int yylex(void);
+    int yyerror(char*);
     FILE *out, *yyin;
     LinkedList *GSymList, *LSymList, *LVarList, *GVarList;
+    int curMemory;
+
+    void checkArg(tnode* sym, tnode* arg) {
+        if(sym == NULL) {
+            if(arg == NULL) return;
+            else {
+                yyerror("Argument mismatch");
+            }
+        }
+        if(arg == NULL) yyerror("Argument mismatch");
+        if(arg->vartype != sym->vartype) yyerror("Argument mismatch");
+        if(arg->type == OP || arg->type == FUNC) return;
+        checkArg(sym->left, arg->left);
+        checkArg(sym->right, arg->right);
+    }
 %}
 
 %locations
@@ -18,10 +34,10 @@
 	
 }
 %type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT body mainblock
-%type <no> param paramlist fdef return arg args funccall funcstmt
+%type <no> param paramlist fdef return arg args funccall funcstmt 
 %type <name> _ID 
 %type <type> type
-%type <list> gvarlist lvarlist ldeclblock ldecl gdeclblock gdecl
+%type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock
 
 %token _DECL _ENDDECL _INT _STR _TEXT _MAIN _RET
 %token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT
@@ -67,17 +83,17 @@ program : gdeclblock fdefblock mainblock
 
  /*------------------------------------------------------Body-------------------------------------------------------------------*/
 
-expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1, $1, $3);}
-     | expr _MINUS expr  	                            {$$ = createNode(OP, "-", -1, $1, $3);}
-	 | expr _MUL expr	                                {$$ = createNode(OP, "*", -1, $1, $3);}
-	 | expr _DIV expr	                                {$$ = createNode(OP, "/", -1, $1, $3);}
-     | expr _LE expr                                    {$$ = createNode(OP, "<=", -1, $1, $3);}
-     | expr _GE expr                                    {$$ = createNode(OP, ">=", -1, $1, $3);}
-     | expr _EQ expr                                    {$$ = createNode(OP, "==", -1, $1, $3);}
-     | expr _LT expr                                    {$$ = createNode(OP, "<", -1, $1, $3);}
-     | expr _GT expr                                    {$$ = createNode(OP, ">", -1, $1, $3);}
-     | expr _NE expr                                    {$$ = createNode(OP, "!=", -1, $1, $3);}
-     | expr _MOD expr                                   {$$ = createNode(OP, "%", -1, $1, $3);}
+expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1, $1, $3); $$->vartype = INT;}
+     | expr _MINUS expr  	                            {$$ = createNode(OP, "-", -1, $1, $3); $$->vartype = INT;}
+	 | expr _MUL expr	                                {$$ = createNode(OP, "*", -1, $1, $3); $$->vartype = INT;}
+	 | expr _DIV expr	                                {$$ = createNode(OP, "/", -1, $1, $3); $$->vartype = INT;}
+     | expr _LE expr                                    {$$ = createNode(OP, "<=", -1, $1, $3); $$->vartype = BOOL;}
+     | expr _GE expr                                    {$$ = createNode(OP, ">=", -1, $1, $3);$$->vartype = BOOL;}
+     | expr _EQ expr                                    {$$ = createNode(OP, "==", -1, $1, $3);$$->vartype = BOOL;}
+     | expr _LT expr                                    {$$ = createNode(OP, "<", -1, $1, $3);$$->vartype = BOOL;}
+     | expr _GT expr                                    {$$ = createNode(OP, ">", -1, $1, $3);$$->vartype = BOOL;}
+     | expr _NE expr                                    {$$ = createNode(OP, "!=", -1, $1, $3);$$->vartype = BOOL;}
+     | expr _MOD expr                                   {$$ = createNode(OP, "%", -1, $1, $3);$$->vartype = INT;}
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1; $$->vartype = INT;}
      | _ID                                              {$$ = createNode(VAR, $1, -1, NULL, NULL);}
@@ -98,8 +114,10 @@ read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "
 write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
-assgn : _ID _EQUALS expr _SEMI                          {$$ = createNode(ASSN, "", -1, createNode(VAR, $1, -1, NULL, NULL), $3);}
-      | _ID '[' expr ']' _EQUALS expr _SEMI             {$$ = createNode(ASSN, "", -1, createNode(VAR, $1, -1, $3, NULL), $6);}
+assgn : _ID _EQUALS expr _SEMI                          { 
+                                                         $$ = createNode(ASSN, "", -1, createNode(VAR, $1, -1, NULL, NULL), $3);}
+      | _ID '[' expr ']' _EQUALS expr _SEMI             {
+                                                         $$ = createNode(ASSN, "", -1, createNode(VAR, $1, -1, $3, NULL), $6);}
       ;
 
 ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE
@@ -148,7 +166,10 @@ arg : expr                                              {$$ = $1;}
 args : args _COMMA arg                                  {$$ = connect($3, $1);}
      | arg                                              {$$ = $1;}
      ;
-funccall : _ID '(' args ')'                      {$$ = createNode(FUNC, $1, -1, $3, NULL);}
+funccall : _ID '(' args ')'                      {  GSymbol* sym = (GSymbol*)searchSymbol($1, GSymList);
+                                                    if(sym== NULL) yyerror("Function is not declared");
+                                                    checkArg(sym->params, $3);
+                                                    $$ = createNode(FUNC, $1, -1, $3, NULL);}
          ;
 funcstmt : funccall _SEMI                               { $$ = $1;}
          ;
@@ -167,14 +188,14 @@ type : _INT                                             {$$ = 0;}
  /*----------------------------------------------------------Local Declaration---------------------------------------------------*/
 
 
-ldeclblock : _DECL ldecl  _ENDDECL                      {$$ = $2;}
-            | _DECL _ENDDECL                            {$$ = NULL;}
+ldeclblock : _DECL ldecllist  _ENDDECL                  { $$ = $2;}
+            | _DECL _ENDDECL                            { $$ = NULL;}
             ;
 
- /*ldecllist : ldecllist ldecl                             { $2->next = }
-         | ldecl                                        { $$ = $1;}
+ ldecllist : ldecllist ldecl                            { $$ = $2;}
+         | ldecl                                        {$$ = $1;}
          ;
- */
+
         
 ldecl : type lvarlist _SEMI                             {
                                                             LinkedList* gvars = $2;
@@ -197,14 +218,14 @@ lvarlist : lvarlist _COMMA _ID                          {$$ = addNode(strdup($3)
 
  /*----------------------------------------------------------Global Declaration--------------------------------------------------*/
 
-gdeclblock : _DECL gdecl _ENDDECL                       { $$ = $2;}
-            | _DECL _ENDDECL                            { $$ = NULL;}
+gdeclblock : _DECL gdecllist _ENDDECL                       { }
+            | _DECL _ENDDECL                            { }
             ;
 
- /*gdecllist : gdecllist gdecl                             {}
+ gdecllist : gdecllist gdecl                            {}
          | gdecl                                        {}
          ;
- */
+ 
         
 gdecl : type gvarlist _SEMI                             {
                                                             LinkedList* gvars = $2;
@@ -214,9 +235,10 @@ gdecl : type gvarlist _SEMI                             {
                                                                     yyerror("Variable is already declared");
                                                                 }
                                                                 GSymbol* tmp = (GSymbol*)malloc(sizeof(GSymbol));
-                                                                *tmp = (GSymbol){.name=var->name, .type=$1, .size=var->size, .params=var->params};
+                                                                *tmp = (GSymbol){.name=var->name, .type=$1, .size=var->size, .params=var->params, .binding=curMemory};
                                                                 GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
                                                                 gvars = gvars->next;
+                                                                curMemory++;
                                                             }
                                                         }
      ;
@@ -255,18 +277,22 @@ gvarlist : gvarlist _COMMA _ID                          {GVariable* tmp = (GVari
 
  /*----------------------------------------------------------Function Definition-------------------------------------------------*/
 
-fdefblock : fdefblock fdef                              {fprintf(out, "%s:\n", $2->varname);
+fdefblock : fdefblock fdef                              {
+                                                         fprintf(out, "%s:\n", $2->varname);
                                                          eval_func($2, out);}
-          | fdef                                        {fprintf(out, "%s:\n", $1->varname);
+
+          | fdef                                        {
+                                                         fprintf(out, "%s:\n", $1->varname);
                                                          eval_func($1, out);}                           
           ;
 
 fdef : type _ID '(' paramlist ')' '{' ldeclblock body '}'   {$$ = createNode(FUNC, $2, -1, $8, $4); $$->vartype = $1;
-                                                             GSymbol* tmp = malloc(sizeof(GSymbol));
+                                                             GSymbol* tmp = searchSymbol($2, GSymList);
+                                                             if(tmp == NULL) yyerror("Function is not declared");
+                                                             checkArg(tmp->params, $4);
                                                              Frame *frame = (Frame*)malloc(sizeof(Frame));
                                                              frame->Lvars = $7;
-                                                             *tmp = (GSymbol){.name=$2, .params=$4, .frame=frame};
-                                                             GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
+                                                             tmp->frame = frame;
                                                             }
      ;
 
@@ -290,6 +316,7 @@ int main(int argc, char **argv) {
         printf("Usage: ./silc <source_file>\n");
         exit(1);
     }
+    curMemory = 4096;
     GSymList = NULL;
     LSymList = NULL;
     LVarList = NULL;
