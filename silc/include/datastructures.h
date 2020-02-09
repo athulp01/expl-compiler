@@ -91,6 +91,7 @@ extern int label;
 
 tnode* createNode(enum TYPE type, char* s, int n, tnode* l, tnode* r);
 tnode* connect(tnode* first, tnode* second);
+LinkedList* connectList(LinkedList* first, LinkedList *second, size_t size);
 LinkedList* addNode(void*, size_t, LinkedList*);
 void* searchSymbol(char*, LinkedList*);
 LinkedList* copyList(LinkedList*, size_t);

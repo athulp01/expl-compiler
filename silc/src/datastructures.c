@@ -56,6 +56,15 @@ LinkedList* copyList(LinkedList* start, size_t dataSize) {
   return tmp;
 }
 
+LinkedList* connectList(LinkedList* first, LinkedList *second, size_t size) {
+  LinkedList *tmp = first;
+  while(first->next) {
+    first = first->next;
+  }
+  first->next = second;
+  return tmp;
+}
+
 LabelList* createLlistNode(int s, int e, LabelList* root) {
   LabelList* tmp = (LabelList*)malloc(sizeof(LabelList));
   tmp->start_label = s;

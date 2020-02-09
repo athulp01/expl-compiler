@@ -53,6 +53,7 @@
 "str" {return _STR;}
 "main" {return _MAIN;}
 "return" {return _RET;}
+"AND"	{return _AND;}
 [a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
 \"(\\.|[^"\\])*\" {yylval.no = createNode(CONST, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 

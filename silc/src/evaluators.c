@@ -10,6 +10,33 @@ int yyerror(char*);
 LabelList* llist;
 LinkedList* GSymList;
 
+
+reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
+    int binding;
+    LSymbol* sym = searchSymbol(root->varname, frame->Lvars);
+    if (sym) {  // local variable
+      binding = sym->binding;
+      reg_index tmp = getReg(frame);
+      fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", tmp, tmp, binding);
+      return tmp;
+    } else {
+      sym = searchSymbol(root->varname, GSymList);
+      if (sym) {  // global variable
+        binding = sym->binding;
+        reg_index num = getReg(frame);
+        fprintf(out, "MOV R%d, %d\n", num, binding);
+        if (root->left) {
+          fprintf(out, "ADD R%d, R%d\n", num,
+                  eval_expr(root->left, frame, out));
+          freeReg(frame);
+        }
+        return num;
+      } else {
+        yyerror("Undefined variable");
+      }
+    }
+}
+
 // Evaluates a tree by calling the respective functions according to node type
 void eval_tree(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
@@ -58,36 +85,12 @@ reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
     if (root->vartype == INT)
       fprintf(out, "MOV R%d, %d\n", cur, root->val);
     else if (root->vartype == STRING)
-      fprintf(out, "MOV R%d, %d\n", cur, root->varname);
+      fprintf(out, "MOV R%d, %s\n", cur, root->varname);
     return cur;
   } else if (root->type == VAR) {
-    int binding;
-    LSymbol* sym = searchSymbol(root->varname, frame->Lvars);
-    if (sym) {  // local variable
-      binding = sym->binding;
-      reg_index tmp = getReg(frame);
-      fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", tmp, tmp, binding);
-      fprintf(out, "MOV R%d, [R%d]\n", cur, tmp);
-      freeReg(frame);
-      return cur;
-    } else {
-      sym = searchSymbol(root->varname, GSymList);
-      if (sym) {  // global variable
-        binding = sym->binding;
-        reg_index num = getReg(frame);
-        fprintf(out, "MOV R%d, %d\n", num, binding);
-        if (root->left) {
-          fprintf(out, "ADD R%d, R%d\n", num,
-                  eval_expr(root->left, frame, out));
-          freeReg(frame);
-        }
-        fprintf(out, "MOV R%d, [R%d]\n", cur, num);
-        freeReg(frame);
-        return cur;
-      } else {
-        yyerror("Undefined variable");
-      }
-    }
+    fprintf(out, "MOV R%d, [R%d]\n", cur, getAddress(root, frame, out));
+    freeReg(frame);
+    return cur;
   } else if (root->type == FUNC) {
     return call_func(root, frame, out);
   }
@@ -100,39 +103,69 @@ reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
     if (root->left->vartype != root->right->vartype) {
       yyerror("Type mismatch");
     }
-    if ((root->left->vartype == root->right->vartype)  && (root->left->vartype == BOOL)) {
-      yyerror("Type mismatch");
-    }
-
-    if (root->right->vartype == INT) {
-      if (!strcmp(root->varname, "+")) {
+    if (!strcmp(root->varname, "+") ) {
+      if(root->right->vartype == INT)
         fprintf(out, "ADD R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, "-")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "-") ) {
+      if(root->right->vartype == INT)
         fprintf(out, "SUB R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, "*")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "*") ) {
+      if(root->right->vartype == INT)
         fprintf(out, "MUL R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, "/")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "/") ) {
+      if(root->right->vartype == INT)
         fprintf(out, "DIV R%d, R%d\n", left, right);
-      }
-    }
-
-    // Compare operators for type string and int
-    if (root->right->vartype != BOOL) {
-      if (!strcmp(root->varname, "<")) {
+      else
+        yyerror("Type mismatch");
+    }else if (!strcmp(root->varname, "<") ) {
+      if(root->right->vartype != BOOL)
         fprintf(out, "LT R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, ">")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, ">")) {
+      if(root->right->vartype != BOOL)
         fprintf(out, "GT R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, "<=")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "<=")) {
+      if(root->right->vartype != BOOL)
         fprintf(out, "LE R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, ">=")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, ">=")) {
+      if(root->right->vartype != BOOL)
         fprintf(out, "GE R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, "==")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "==")) {
+      if(root->right->vartype != BOOL)
         fprintf(out, "EQ R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, "!=")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "!=")) {
+      if(root->right->vartype != BOOL)
         fprintf(out, "NE R%d, R%d\n", left, right);
-      } else if (!strcmp(root->varname, "%")) {
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "%")) {
+      if(root->right->vartype == INT)
         fprintf(out, "MOD R%d, R%d\n", left, right);
+      else
+        yyerror("Type mismatch");
+    } else if (!strcmp(root->varname, "AND")) {
+      if(root->right->vartype == BOOL) {
+        reg_index tmp = getReg(frame);
+        fprintf(out, "ADD R%d, R%d\nMOV R%d, 2\nEQ R%d, R%d\n", left, right, tmp, left, tmp);
+        freeReg(frame);
       }
+      else
+        yyerror("Type mismatch");
     }
     freeReg(frame);
   }
@@ -156,22 +189,7 @@ void eval_write(tnode* root, Frame* frame, FILE* out) {
 void eval_read(tnode* root, Frame* frame, FILE* out) {
   pushRegToStack(frame, out);
   int binding;
-  reg_index mem;
-  LSymbol* sym = searchSymbol(root->left->varname, frame->Lvars);
-  if (sym) {  // local variable
-    binding = sym->binding;
-    reg_index tmp = getReg(frame);
-    fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", mem, mem, binding);
-  } else {
-    sym = searchSymbol(root->left->varname, GSymList);
-    if (sym) {  // global variable
-      binding = sym->binding;
-      fprintf(out, "MOV R%d, %d\n", mem, binding);
-      if (root->left)
-        fprintf(out, "ADD R%d, R%d\n", mem,
-                eval_expr(root->left->left, frame, out));
-    }
-  }
+  reg_index mem = getAddress(root->left, frame, out);
   reg_index comm = getReg(frame);
   fprintf(out, "MOV R%d, \"Read\"\nPUSH R%d\nMOV R%d, -1\n", comm, comm, comm);
   fprintf(out, "PUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", comm, mem, comm,
@@ -185,26 +203,7 @@ void eval_read(tnode* root, Frame* frame, FILE* out) {
 
 void eval_assgn(tnode* root, Frame* frame, FILE* out) {
   LSymbol* sym = (LSymbol*)searchSymbol(root->left->varname, frame->Lvars);
-  reg_index binding = getReg(frame);
-  if (sym) {
-    if (sym->type != root->right->vartype)
-      yyerror("Type mismatch");
-    fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", binding, binding, sym->binding);
-  } else {
-    GSymbol* sym = (GSymbol*)searchSymbol(root->left->varname, GSymList);
-    if (sym) {
-      if (sym->type != root->right->vartype)
-        yyerror("Type mismatch");
-      fprintf(out, "MOV R%d, %d\n", binding, sym->binding);
-      if (root->left->left) {
-        fprintf(out, "ADD R%d, R%d\n", binding,
-                eval_expr(root->left->left, frame, out));
-        freeReg(frame);
-      }
-    } else {
-      yyerror("Variable not found");
-    }
-  }
+  reg_index binding = getAddress(root->left, frame, out);
   reg_index right = eval_expr(root->right, frame, out);
   fprintf(out, "MOV [R%d], R%d\n", binding, right);
   freeReg(frame);
@@ -316,14 +315,14 @@ void pushArgToStack(tnode* root, Frame* frame, FILE* out) {
 int addArgSymbol(tnode* root, Frame* frame, int mem, FILE* out) {
   if (root == NULL)
     return mem;
-  int left = addArgSymbol(root->left, frame, mem, out);
+  int left = addArgSymbol(root->right, frame, mem, out);
   if(root->type != CONN) {
     LSymbol* tmp = malloc(sizeof(LSymbol));
     *tmp = (LSymbol){
         .name = root->varname, .type = root->vartype, .binding = left--};
     frame->Lvars = addNode(tmp, sizeof(LSymbol), frame->Lvars);
   }
-  int right = addArgSymbol(root->right, frame, left, out);
+  int right = addArgSymbol(root->left, frame, left, out);
   return right;
 }
 

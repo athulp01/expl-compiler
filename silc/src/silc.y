@@ -40,12 +40,12 @@
 %type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock
 
 %token _DECL _ENDDECL _INT _STR _TEXT _MAIN _RET
-%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT
-%token _LT _GT _EQ _NE _LE _GE 
+%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND
+%token _LT _GT _EQ _NE _LE _GE
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD
 %token _ID _NUM
 
-%nonassoc _LT _GT _EQ _NE _LE _GE _ID
+%nonassoc _LT _GT _EQ _NE _LE _GE _ID _AND
 
 %left _MOD
 %left _PLUS _MINUS
@@ -93,6 +93,7 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
      | expr _LT expr                                    {$$ = createNode(OP, "<", -1, $1, $3);$$->vartype = BOOL;}
      | expr _GT expr                                    {$$ = createNode(OP, ">", -1, $1, $3);$$->vartype = BOOL;}
      | expr _NE expr                                    {$$ = createNode(OP, "!=", -1, $1, $3);$$->vartype = BOOL;}
+     | expr _AND expr                                    {$$ = createNode(OP, "AND", -1, $1, $3);$$->vartype = BOOL;}
      | expr _MOD expr                                   {$$ = createNode(OP, "%", -1, $1, $3);$$->vartype = INT;}
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1; $$->vartype = INT;}
@@ -192,7 +193,7 @@ ldeclblock : _DECL ldecllist  _ENDDECL                  { $$ = $2;}
             | _DECL _ENDDECL                            { $$ = NULL;}
             ;
 
- ldecllist : ldecllist ldecl                            { $$ = $2;}
+ ldecllist : ldecllist ldecl                            { $$ = connectList($1, $2, sizeof(LSymbol));}
          | ldecl                                        {$$ = $1;}
          ;
 
@@ -238,12 +239,12 @@ gdecl : type gvarlist _SEMI                             {
                                                                 *tmp = (GSymbol){.name=var->name, .type=$1, .size=var->size, .params=var->params, .binding=curMemory};
                                                                 GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
                                                                 gvars = gvars->next;
-                                                                curMemory++;
+                                                                curMemory+=var->size;
                                                             }
                                                         }
      ;
 gvarlist : gvarlist _COMMA _ID                          {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
-                                                         *tmp = (GVariable){.name=$3};
+                                                         *tmp = (GVariable){.name=$3, .size=1};
                                                          $$ = addNode(tmp, sizeof(GVariable), $1);
                                                         }
 
@@ -253,7 +254,7 @@ gvarlist : gvarlist _COMMA _ID                          {GVariable* tmp = (GVari
                                                         }
 
         | gvarlist _COMMA _ID '(' paramlist ')'         {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
-                                                         *tmp = (GVariable){.name=$3, .params=$5};
+                                                         *tmp = (GVariable){.name=$3, .params=$5, .size=0};
                                                          $$ = addNode(tmp, sizeof(GVariable), $1);
                                                         }
 
@@ -263,12 +264,12 @@ gvarlist : gvarlist _COMMA _ID                          {GVariable* tmp = (GVari
                                                         }
 
         | _ID                                           {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
-                                                         *tmp = (GVariable){.name=$1};
+                                                         *tmp = (GVariable){.name=$1, .size=1};
                                                          $$ = addNode(tmp, sizeof(GVariable), NULL);
                                                         }
 
         | _ID '(' paramlist ')'                         {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
-                                                         *tmp = (GVariable){.name=$1, .params=$3};
+                                                         *tmp = (GVariable){.name=$1, .params=$3, .size=0};
                                                          $$ = addNode(tmp, sizeof(GVariable), NULL);
                                                         }
         ;
