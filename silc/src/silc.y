@@ -74,7 +74,7 @@ program : gdeclblock fdefblock mainblock
                                                              frame->Lvars = $6;
                                                              *tmp = (GSymbol){.name="main", .params=NULL, .frame=frame};
                                                              GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
-                                                             fprintf(out ,"main:\nMOV SP, 4300\nBRKP\n");
+                                                             fprintf(out ,"main:\nBRKP\n");
                                                              eval_func(node, out);
                                                             } 
 
@@ -324,9 +324,9 @@ int main(int argc, char **argv) {
     yyin = fopen(argv[1], "r");
     if(yyin == NULL) yyerror("Input file not found");
 	out = fopen("./out.xsm", "w");
-    fprintf(out, "0\nSTART\n0\n0\n0\n0\n0\n0\n");
+    fprintf(out, "0\n2056\n0\n0\n0\n0\n0\n0\nMOV SP, 4300\nCALL main\n");
+    fprintf(out, "MOV R19, \"Exit\"\nPUSH R19\nPUSH R19\nPUSH R19\nPUSH R19\nPUSH R19\nCALL 0\n");
     if(out == NULL) yyerror("file");
 	yyparse();
-    fprintf(out, "MOV R19, \"Exit\"\nPUSH R19\nPUSH R19\nPUSH R19\nPUSH R19\nPUSH R19\nCALL 0");
 	return 0;
 }

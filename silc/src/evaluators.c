@@ -304,7 +304,7 @@ void pushArgToStack(tnode* root, Frame* frame, FILE* out) {
     return;
   }
   if (root->type == FUNC) {
-    fprintf(out, "PUSH R%d\n", call_func(root, frame, out));
+    fprintf(out, "PUSH R%d aeg\n", call_func(root, frame, out));
     return;
   }
   reg_index value = eval_expr(root, frame, out);
@@ -317,10 +317,12 @@ int addArgSymbol(tnode* root, Frame* frame, int mem, FILE* out) {
   if (root == NULL)
     return mem;
   int left = addArgSymbol(root->left, frame, mem, out);
-  LSymbol* tmp = malloc(sizeof(LSymbol));
-  *tmp = (LSymbol){
-      .name = root->varname, .type = root->vartype, .binding = left--};
-  frame->Lvars = addNode(tmp, sizeof(LSymbol), frame->Lvars);
+  if(root->type != CONN) {
+    LSymbol* tmp = malloc(sizeof(LSymbol));
+    *tmp = (LSymbol){
+        .name = root->varname, .type = root->vartype, .binding = left--};
+    frame->Lvars = addNode(tmp, sizeof(LSymbol), frame->Lvars);
+  }
   int right = addArgSymbol(root->right, frame, left, out);
   return right;
 }
@@ -330,8 +332,8 @@ void popArgFromStack(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
     return;
   if (root->type == CONN) {
-    pushArgToStack(root->left, frame, out);
-    pushArgToStack(root->right, frame, out);
+    popArgFromStack(root->left, frame, out);
+    popArgFromStack(root->right, frame, out);
     return;
   }
   reg_index value = getReg(frame);
