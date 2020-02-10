@@ -33,7 +33,7 @@
     LinkedList* list;
 	
 }
-%type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT body mainblock
+%type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT mainblock
 %type <no> param paramlist fdef return arg args funccall funcstmt 
 %type <name> _ID 
 %type <type> type
@@ -68,7 +68,7 @@ program : gdeclblock fdefblock mainblock
 
  /*--------------------------------------------------------Main-----------------------------------------------------------------*/
 
- mainblock : _INT _MAIN '(' ')' '{' ldeclblock body '}'      {tnode *node = createNode(FUNC, "main", -1, $7, NULL); $$->vartype = 0;
+ mainblock : _INT _MAIN '(' ')' '{' ldeclblock _BEGIN stmtList return  _END '}'      {tnode *node = createNode(FUNC, "main", -1, connect($8,$9), NULL); $$->vartype = 0;
                                                              GSymbol* tmp = malloc(sizeof(GSymbol));
                                                              Frame *frame = (Frame*)malloc(sizeof(Frame));
                                                              frame->Lvars = $6;
@@ -149,16 +149,13 @@ stmt : read                                             {$$ = $1;}
      | whilestmt                                        {$$ = $1;}
      | break                                            {$$ = $1;}
      | cont                                             {$$ = $1;}
-     | return                                           {$$ = $1;}
-     | funcstmt                                        {$$ = $1;}
+     | funcstmt                                         {$$ = $1;}
      ;
 
 stmtList : stmtList stmt                                {$$ = connect($1, $2);}
          | stmt                                         {$$ = $1;}
          ;
 
-body : _BEGIN stmtList _END                             {$$ = $2;}
-     ;
 
 arg : expr                                              {$$ = $1;}
     |                                                   {$$ = NULL;}
@@ -287,15 +284,16 @@ fdefblock : fdefblock fdef                              {
                                                          eval_func($1, out);}                           
           ;
 
-fdef : type _ID '(' paramlist ')' '{' ldeclblock body '}'   {$$ = createNode(FUNC, $2, -1, $8, $4); $$->vartype = $1;
-                                                             GSymbol* tmp = searchSymbol($2, GSymList);
-                                                             if(tmp == NULL) yyerror("Function is not declared");
-                                                             checkArg(tmp->params, $4);
-                                                             Frame *frame = (Frame*)malloc(sizeof(Frame));
-                                                             frame->Lvars = $7;
-                                                             tmp->frame = frame;
-                                                            }
-     ;
+fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'   {if($1 != $10->left->vartype) yyerror("Return type is not correct");
+                                                                    $$ = createNode(FUNC, $2, -1, connect($9, $10), $4); $$->vartype = $1;
+                                                                    GSymbol* tmp = searchSymbol($2, GSymList);
+                                                                    if(tmp == NULL) yyerror("Function is not declared");
+                                                                    checkArg(tmp->params, $4);
+                                                                    Frame *frame = (Frame*)malloc(sizeof(Frame));
+                                                                    frame->Lvars = $7;
+                                                                    tmp->frame = frame;
+                                                                    }
+            ;
 
 paramlist : paramlist _COMMA param                      { $$ = connect($3, $1);}
           | param                                       { $$ = $1;}
