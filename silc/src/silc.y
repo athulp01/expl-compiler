@@ -284,7 +284,15 @@ fdefblock : fdefblock fdef                              {
                                                          eval_func($1, out);}                           
           ;
 
-fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'   {if($1 != $10->left->vartype) yyerror("Return type is not correct");
+fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'   {
+                                                                    if($10->left->type == VAR) { 
+                                                                        LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname, $7);
+                                                                        if(sym && $1 != sym->type) yyerror("Return type is not correct");
+                                                                        if(!sym) {
+                                                                            LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname,GSymList);
+                                                                            if(sym && $1 != sym->type) yyerror("Return type is not correct");
+                                                                        }
+                                                                    } else if($1 != $10->left->vartype) yyerror("Return type is not correct");
                                                                     $$ = createNode(FUNC, $2, -1, connect($9, $10), $4); $$->vartype = $1;
                                                                     GSymbol* tmp = searchSymbol($2, GSymList);
                                                                     if(tmp == NULL) yyerror("Function is not declared");

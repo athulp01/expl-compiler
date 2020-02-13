@@ -556,7 +556,7 @@ static const yytype_uint16 yyrline[] =
      150,   151,   152,   155,   156,   160,   161,   164,   165,   167,
      172,   180,   181,   189,   190,   193,   194,   198,   210,   211,
      219,   220,   223,   224,   228,   243,   248,   253,   258,   263,
-     268,   278,   282,   287,   298,   299,   300,   303
+     268,   278,   282,   287,   306,   307,   308,   311
 };
 #endif
 
@@ -2073,7 +2073,15 @@ yyreduce:
 
   case 73:
 #line 287 "./src/silc.y"
-    {if((yyvsp[-11].type) != (yyvsp[-2].no)->left->vartype) yyerror("Return type is not correct");
+    {
+                                                                    if((yyvsp[-2].no)->left->type == VAR) { 
+                                                                        LSymbol *sym = (LSymbol*)searchSymbol((yyvsp[-2].no)->left->varname, (yyvsp[-5].list));
+                                                                        if(sym && (yyvsp[-11].type) != sym->type) yyerror("Return type is not correct");
+                                                                        if(!sym) {
+                                                                            LSymbol *sym = (LSymbol*)searchSymbol((yyvsp[-2].no)->left->varname,GSymList);
+                                                                            if(sym && (yyvsp[-11].type) != sym->type) yyerror("Return type is not correct");
+                                                                        }
+                                                                    } else if((yyvsp[-11].type) != (yyvsp[-2].no)->left->vartype) yyerror("Return type is not correct");
                                                                     (yyval.no) = createNode(FUNC, (yyvsp[-10].name), -1, connect((yyvsp[-3].no), (yyvsp[-2].no)), (yyvsp[-8].no)); (yyval.no)->vartype = (yyvsp[-11].type);
                                                                     GSymbol* tmp = searchSymbol((yyvsp[-10].name), GSymList);
                                                                     if(tmp == NULL) yyerror("Function is not declared");
@@ -2082,35 +2090,35 @@ yyreduce:
                                                                     frame->Lvars = (yyvsp[-5].list);
                                                                     tmp->frame = frame;
                                                                     }
-#line 2086 "./src/y.tab.c"
+#line 2094 "./src/y.tab.c"
     break;
 
   case 74:
-#line 298 "./src/silc.y"
+#line 306 "./src/silc.y"
     { (yyval.no) = connect((yyvsp[0].no), (yyvsp[-2].no));}
-#line 2092 "./src/y.tab.c"
+#line 2100 "./src/y.tab.c"
     break;
 
   case 75:
-#line 299 "./src/silc.y"
+#line 307 "./src/silc.y"
     { (yyval.no) = (yyvsp[0].no);}
-#line 2098 "./src/y.tab.c"
+#line 2106 "./src/y.tab.c"
     break;
 
   case 76:
-#line 300 "./src/silc.y"
+#line 308 "./src/silc.y"
     {(yyval.no) = NULL;}
-#line 2104 "./src/y.tab.c"
+#line 2112 "./src/y.tab.c"
     break;
 
   case 77:
-#line 303 "./src/silc.y"
+#line 311 "./src/silc.y"
     {(yyval.no) = createNode(VAR, (yyvsp[0].name), -1, NULL, NULL); (yyval.no)->vartype = (yyvsp[-1].type);}
-#line 2110 "./src/y.tab.c"
+#line 2118 "./src/y.tab.c"
     break;
 
 
-#line 2114 "./src/y.tab.c"
+#line 2122 "./src/y.tab.c"
 
       default: break;
     }
@@ -2348,7 +2356,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 308 "./src/silc.y"
+#line 316 "./src/silc.y"
 
 
 
