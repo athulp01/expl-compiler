@@ -2074,7 +2074,7 @@ yyreduce:
   case 73:
 #line 287 "./src/silc.y"
     {
-                                                                    if((yyvsp[-2].no)->left->type == VAR) { 
+                                                                    if((yyvsp[-2].no)->left->type == VAR) {  
                                                                         LSymbol *sym = (LSymbol*)searchSymbol((yyvsp[-2].no)->left->varname, (yyvsp[-5].list));
                                                                         if(sym && (yyvsp[-11].type) != sym->type) yyerror("Return type is not correct");
                                                                         if(!sym) {
