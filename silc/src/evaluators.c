@@ -258,16 +258,16 @@ void eval_cont(FILE* out) {
 }
 
 reg_index call_func(tnode* root, Frame* frame, FILE* out) {
-  pushRegToStack(frame, out);
+  int reg = pushRegToStack(frame, out);
   pushArgToStack(root->left, frame, out);
   reg_index tmp = getReg(frame);
   fprintf(out, "PUSH R%d\n", tmp);
   freeReg(frame);
   fprintf(out, "CALL %s\n", root->varname);
   tmp = getReg(frame);
-  fprintf(out, "POP R%d \\return\n", tmp);
+  fprintf(out, "POP R%d\n", tmp);
   popArgFromStack(root->left, frame, out);
-  getRegFromStack(frame, out);
+  if(reg) getRegFromStack(frame, out);
   return tmp;
 }
 
@@ -286,7 +286,7 @@ void eval_func(tnode* root, FILE* out) {
   while (list) {
     ((LSymbol*)list->data)->binding = count++;
     list = list->next;
-    fprintf(out, "PUSH R%d \\local variables\n",
+    fprintf(out, "PUSH R%d\n",
             tmp);  // push a free space for the variable
   }
   freeReg(frame);
@@ -303,11 +303,12 @@ void pushArgToStack(tnode* root, Frame* frame, FILE* out) {
     return;
   }
   if (root->type == FUNC) {
-    fprintf(out, "PUSH R%d aeg\n", call_func(root, frame, out));
+    fprintf(out, "PUSH R%d \\arg\n", call_func(root, frame, out));
+    freeReg(frame);
     return;
   }
   reg_index value = eval_expr(root, frame, out);
-  fprintf(out, "PUSH R%d \\Argument\n", value);
+  fprintf(out, "PUSH R%d \\arg\n", value);
   freeReg(frame);
   return;
 }
@@ -336,7 +337,7 @@ void popArgFromStack(tnode* root, Frame* frame, FILE* out) {
     return;
   }
   reg_index value = getReg(frame);
-  fprintf(out, "POP R%d \\Argument\n", value);
+  fprintf(out, "POP R%d \\argu\n", value);
   freeReg(frame);
   return;
 }
@@ -350,7 +351,7 @@ void eval_return(tnode* root, Frame* frame, FILE* out) {
   LinkedList* list = frame->Lvars;
   while (list) {
     if (((LSymbol*)list->data)->binding >= 0)
-      fprintf(out, "POP R%d \\local varibales\n", tmp);
+      fprintf(out, "POP R%d\n", tmp);
     list = list->next;
   }
   fprintf(out, "POP R%d\nMOV BP, R%d\nRET\n", tmp, tmp);

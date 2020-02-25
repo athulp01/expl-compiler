@@ -105,13 +105,16 @@ void freeReg(Frame *frame) {
     }
 }
 
-void pushRegToStack(Frame *frame, FILE *out) {
+int pushRegToStack(Frame *frame, FILE *out) {
+  int count = 0;
   for (reg_index i = 0; i < 20; i++) {
     if (frame->registers[i] == IN_USE) {
+      count++;
       fprintf(out, "PUSH R%d \\register\n", i);
       frame->registers[i] = RESV;
     }
   }
+  return count;
 }
 
 void getRegFromStack(Frame *frame, FILE *out) {

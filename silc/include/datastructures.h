@@ -103,6 +103,6 @@ reg_index getReg(Frame*);
 // free the last used register
 void freeReg(Frame*);
 // Push all the registers which are in use to stack
-void pushRegToStack(Frame*, FILE*);
+int pushRegToStack(Frame*, FILE*);
 // Get back all the registers from the stack
 void getRegFromStack(Frame*, FILE*);
