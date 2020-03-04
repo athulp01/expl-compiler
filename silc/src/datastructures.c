@@ -7,6 +7,24 @@
 int yyerror(char*);
 int label = 0;
 
+void* searchType(char *s, LinkedList *front) {
+  while(front) {
+    Type* type = (Type*)front->data;
+    if(!strcmp(type->name, s)) return type;
+    front = front->next;
+  }
+  return NULL;
+}
+
+int searchField(char *s, LinkedList *front) {
+  while(front) {
+    Field* field = (Field*)front->data;
+    if(!strcmp(field->name, s)) return field->idx;
+    front = front->next;
+  }
+  return 0;
+}
+
 tnode* createNode(enum TYPE type, char* s, int n, tnode* l,
                   tnode* r) {
   tnode* tmp = (tnode*)malloc(sizeof(tnode));

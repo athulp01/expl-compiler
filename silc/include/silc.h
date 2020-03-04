@@ -56,37 +56,42 @@ extern int yydebug;
     _TEXT = 262,
     _MAIN = 263,
     _RET = 264,
-    _IF = 265,
-    _WHILE = 266,
-    _THEN = 267,
-    _ELSE = 268,
-    _ENDIF = 269,
-    _ENDWHILE = 270,
-    _DO = 271,
-    _BREAK = 272,
-    _CONT = 273,
-    _AND = 274,
-    _LT = 275,
-    _GT = 276,
-    _EQ = 277,
-    _NE = 278,
-    _LE = 279,
-    _GE = 280,
-    _PLUS = 281,
-    _MINUS = 282,
-    _MUL = 283,
-    _DIV = 284,
-    _END = 285,
-    _BEGIN = 286,
-    _READ = 287,
-    _WRITE = 288,
-    _SEMI = 289,
-    _EQUALS = 290,
-    _Q = 291,
-    _COMMA = 292,
-    _MOD = 293,
-    _ID = 294,
-    _NUM = 295
+    _TYPE = 265,
+    _ENDTYPE = 266,
+    _NULL = 267,
+    _IF = 268,
+    _WHILE = 269,
+    _THEN = 270,
+    _ELSE = 271,
+    _ENDIF = 272,
+    _ENDWHILE = 273,
+    _DO = 274,
+    _BREAK = 275,
+    _CONT = 276,
+    _AND = 277,
+    _INIT = 278,
+    _ALLOC = 279,
+    _LT = 280,
+    _GT = 281,
+    _EQ = 282,
+    _NE = 283,
+    _LE = 284,
+    _GE = 285,
+    _PLUS = 286,
+    _MINUS = 287,
+    _MUL = 288,
+    _DIV = 289,
+    _END = 290,
+    _BEGIN = 291,
+    _READ = 292,
+    _WRITE = 293,
+    _SEMI = 294,
+    _EQUALS = 295,
+    _Q = 296,
+    _COMMA = 297,
+    _MOD = 298,
+    _ID = 299,
+    _NUM = 300
   };
 #endif
 /* Tokens.  */
@@ -97,51 +102,57 @@ extern int yydebug;
 #define _TEXT 262
 #define _MAIN 263
 #define _RET 264
-#define _IF 265
-#define _WHILE 266
-#define _THEN 267
-#define _ELSE 268
-#define _ENDIF 269
-#define _ENDWHILE 270
-#define _DO 271
-#define _BREAK 272
-#define _CONT 273
-#define _AND 274
-#define _LT 275
-#define _GT 276
-#define _EQ 277
-#define _NE 278
-#define _LE 279
-#define _GE 280
-#define _PLUS 281
-#define _MINUS 282
-#define _MUL 283
-#define _DIV 284
-#define _END 285
-#define _BEGIN 286
-#define _READ 287
-#define _WRITE 288
-#define _SEMI 289
-#define _EQUALS 290
-#define _Q 291
-#define _COMMA 292
-#define _MOD 293
-#define _ID 294
-#define _NUM 295
+#define _TYPE 265
+#define _ENDTYPE 266
+#define _NULL 267
+#define _IF 268
+#define _WHILE 269
+#define _THEN 270
+#define _ELSE 271
+#define _ENDIF 272
+#define _ENDWHILE 273
+#define _DO 274
+#define _BREAK 275
+#define _CONT 276
+#define _AND 277
+#define _INIT 278
+#define _ALLOC 279
+#define _LT 280
+#define _GT 281
+#define _EQ 282
+#define _NE 283
+#define _LE 284
+#define _GE 285
+#define _PLUS 286
+#define _MINUS 287
+#define _MUL 288
+#define _DIV 289
+#define _END 290
+#define _BEGIN 291
+#define _READ 292
+#define _WRITE 293
+#define _SEMI 294
+#define _EQUALS 295
+#define _Q 296
+#define _COMMA 297
+#define _MOD 298
+#define _ID 299
+#define _NUM 300
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 29 "./src/silc.y"
+#line 34 "./src/silc.y"
 
 	tnode *no;
     char *name;
-    int type;
+    char* type;
     LinkedList* list;
+    Field* field;
 	
 
-#line 145 "./include/silc.h"
+#line 156 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

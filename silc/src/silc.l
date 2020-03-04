@@ -29,6 +29,7 @@
 [\n] 	{}
 [()]	{return *yytext;}
 [{}]	{return *yytext;}
+[.]		{return *yytext;}
 "[" {return *yytext;}
 "]"	{return *yytext;}
 "end" {return _END;}
@@ -49,11 +50,14 @@
 "continue"	{return _CONT;}
 "decl"	{return _DECL;}
 "enddecl"	{return _ENDDECL;}
-"int"	{return _INT;}
-"str" {return _STR;}
 "main" {return _MAIN;}
 "return" {return _RET;}
 "AND"	{return _AND;}
+"type" 	{return _TYPE;}
+"endtype" {return _ENDTYPE;}
+"initialize" {return _INIT;}
+"alloc" {return _ALLOC;}
+"null" {return _NULL;}
 [a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
 \"(\\.|[^"\\])*\" {yylval.no = createNode(CONST, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 

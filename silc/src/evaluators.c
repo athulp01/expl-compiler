@@ -13,24 +13,42 @@ LinkedList* GSymList;
 
 reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
     int binding;
-    LSymbol* sym = searchSymbol(root->varname, frame->Lvars);
+    char *name = strtok(root->varname, ".");
+    LSymbol* sym = searchSymbol(name, frame->Lvars);
     if (sym) {  // local variable
       binding = sym->binding;
+      reg_index mem = getReg(frame);
       reg_index tmp = getReg(frame);
-      fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", tmp, tmp, binding);
-      return tmp;
+      fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", mem, mem, binding);
+      int idx = 0;
+      char *tok;
+      while((tok = strtok(NULL, "."))) {
+        idx = searchField(tok, sym->type->fields);
+        fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
+      }
+      freeReg(frame);
+      return mem;
     } else {
-      sym = searchSymbol(root->varname, GSymList);
+      sym = searchSymbol(name, GSymList);
       if (sym) {  // global variable
         binding = sym->binding;
-        reg_index num = getReg(frame);
-        fprintf(out, "MOV R%d, %d\n", num, binding);
+        reg_index mem = getReg(frame);
+        reg_index tmp = getReg(frame);
+        int idx = 0;
+        char *tok;
+        fprintf(out, "MOV R%d, %d\n", mem, binding);
         if (root->left) {
-          fprintf(out, "ADD R%d, R%d\n", num,
+          fprintf(out, "ADD R%d, R%d\n", mem,
                   eval_expr(root->left, frame, out));
           freeReg(frame);
+        }else {
+          while((tok = strtok(NULL, "."))) {
+            idx += searchField(tok, sym->type->fields);
+            fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
+          }
         }
-        return num;
+        freeReg(frame);
+        return mem;
       } else {
         yyerror("Undefined variable");
       }
@@ -82,9 +100,9 @@ reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
 
   reg_index cur = getReg(frame);
   if (root->type == CONST) {
-    if (root->vartype == INT)
+    if (!strcmp(root->vartype->name, "int"))
       fprintf(out, "MOV R%d, %d\n", cur, root->val);
-    else if (root->vartype == STRING)
+    else if (!strcmp(root->vartype->name, "str"))
       fprintf(out, "MOV R%d, %s\n", cur, root->varname);
     return cur;
   } else if (root->type == VAR) {
@@ -93,6 +111,10 @@ reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
     return cur;
   } else if (root->type == FUNC) {
     return call_func(root, frame, out);
+  } else if(root->type == INIT) {
+    eval_init(frame, out);
+    fprintf(out, "MOV R%d, 0\n", cur);
+    return cur;
   }
   freeReg(frame);
 
@@ -100,72 +122,34 @@ reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
   reg_index right = eval_expr(root->right, frame, out);
 
   if (root->type == OP) {
-    if (root->left->vartype != root->right->vartype) {
-      yyerror("Type mismatch");
-    }
     if (!strcmp(root->varname, "+") ) {
-      if(root->right->vartype == INT)
         fprintf(out, "ADD R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "-") ) {
-      if(root->right->vartype == INT)
         fprintf(out, "SUB R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "*") ) {
-      if(root->right->vartype == INT)
         fprintf(out, "MUL R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "/") ) {
-      if(root->right->vartype == INT)
         fprintf(out, "DIV R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     }else if (!strcmp(root->varname, "<") ) {
-      if(root->right->vartype != BOOL)
         fprintf(out, "LT R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, ">")) {
-      if(root->right->vartype != BOOL)
         fprintf(out, "GT R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "<=")) {
-      if(root->right->vartype != BOOL)
         fprintf(out, "LE R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, ">=")) {
-      if(root->right->vartype != BOOL)
         fprintf(out, "GE R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "==")) {
-      if(root->right->vartype != BOOL)
         fprintf(out, "EQ R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "!=")) {
-      if(root->right->vartype != BOOL)
         fprintf(out, "NE R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "%")) {
-      if(root->right->vartype == INT)
         fprintf(out, "MOD R%d, R%d\n", left, right);
-      else
-        yyerror("Type mismatch");
     } else if (!strcmp(root->varname, "AND")) {
-      if(root->right->vartype == BOOL) {
+      if(!strcmp(root->vartype->name, "bool")) {
         reg_index tmp = getReg(frame);
         fprintf(out, "ADD R%d, R%d\nMOV R%d, 2\nEQ R%d, R%d\n", left, right, tmp, left, tmp);
         freeReg(frame);
       }
-      else
-        yyerror("Type mismatch");
     }
     freeReg(frame);
   }
@@ -203,8 +187,10 @@ void eval_read(tnode* root, Frame* frame, FILE* out) {
 
 void eval_assgn(tnode* root, Frame* frame, FILE* out) {
   LSymbol* sym = (LSymbol*)searchSymbol(root->left->varname, frame->Lvars);
-  reg_index binding = getAddress(root->left, frame, out);
-  reg_index right = eval_expr(root->right, frame, out);
+  reg_index binding = getAddress(root->left, frame, out), right;
+  if(root->right->type == ALLOC) {
+    right = eval_alloc(sym->type->size, frame, out);
+  } else right = eval_expr(root->right, frame, out);
   fprintf(out, "MOV [R%d], R%d\n", binding, right);
   freeReg(frame);
   freeReg(frame);
@@ -267,6 +253,7 @@ reg_index call_func(tnode* root, Frame* frame, FILE* out) {
   tmp = getReg(frame);
   fprintf(out, "POP R%d\n", tmp);
   popArgFromStack(root->left, frame, out);
+  //Only pop if pushed
   if(reg) getRegFromStack(frame, out);
   return tmp;
 }
@@ -356,4 +343,31 @@ void eval_return(tnode* root, Frame* frame, FILE* out) {
   }
   fprintf(out, "POP R%d\nMOV BP, R%d\nRET\n", tmp, tmp);
   freeReg(frame);
+}
+
+void eval_init(Frame *frame, FILE *out) {
+  pushRegToStack(frame, out);
+  reg_index init = getReg(frame);
+  fprintf(out, "MOV R%d, \"Heapset\"\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", init, init, init, init);
+  fprintf(out,"PUSH R%d\nPUSH R%d\nCALL 0\n", init, init);
+  fprintf(out, "POP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", init, init, init, init, init);
+  freeReg(frame);
+  getRegFromStack(frame, out);
+}
+
+reg_index eval_alloc(int size, Frame *frame, FILE *out) {
+  pushRegToStack(frame, out);
+  reg_index addr = getReg(frame);
+  reg_index init = getReg(frame);
+  reg_index size_reg = getReg(frame);
+  fprintf(out, "MOV R%d, %d\n", size_reg, size);
+  fprintf(out, "MOV R%d, \"Alloc\"\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", init, init, init, init);
+  fprintf(out,"PUSH R%d\nPUSH R%d\nCALL 0\n", init, init);
+  freeReg(frame);
+  freeReg(frame);
+  reg_index tmp = getReg(frame);
+  fprintf(out, "POP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", addr, tmp, tmp, tmp, tmp);
+  freeReg(frame);
+  getRegFromStack(frame, out);
+  return addr;
 }

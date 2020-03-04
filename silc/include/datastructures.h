@@ -1,9 +1,17 @@
+/*
+Contains all data structures and helper methods to 
+create the abstract symbol treee
+*/
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
 
+/* -----------------Enums--------------*/
+
+//Register use status
 enum STATUS { FREE, IN_USE, RESV };
 
+//Type of the AST node
 enum TYPE {
   CONST,
   READ,
@@ -19,12 +27,19 @@ enum TYPE {
   CONT,
   FUNC,
   RET,
+  INIT,
+  ALLOC,
 };
 
+//Deprecated! Use Type instead.
 enum VARTYPE { INT, BOOL, STRING };
+//--------------------------------------
+
+/* -----------------typedefs--------------*/
 
 typedef short reg_index;
 
+//Generic linkedlist definition
 typedef struct _LinkedList {
   void* data;
   struct _LinkedList* next;
@@ -42,14 +57,6 @@ typedef struct _Frame {
   LinkedList* Lvars;
 } Frame;
 
-// structure for storing the local symbol table
-typedef struct _LSymbol {
-  char* name;
-  enum VARTYPE type;
-  int size;
-  int binding;
-} LSymbol;
-
 // Structure for storing variable list
 typedef struct _Parameter {
   char* name;
@@ -57,46 +64,90 @@ typedef struct _Parameter {
 } Parameter;
 
 struct _GSymbol;
+struct _Type;
 
+//AST node
 typedef struct _tnode {
   enum TYPE type;
-  enum VARTYPE vartype;
+  struct _Type *vartype;
   char* varname;
-  struct _GSymbol* symbol;
+  struct _GSymbol* symbol;    //can also refer to local symbol by type casting
   int val;
   struct _tnode *left, *right;  // left and right branches
 } tnode;
 
+//helper struct to create global symtable
 typedef struct {
   char* name;
   int size;
   tnode* params;
 } GVariable;
 
+//For storing user and inbuilt types
+typedef struct _Type {
+  char *name;
+  int size;
+  LinkedList *fields;
+}Type;
+
+//For storing fields of user defined types
+typedef struct _Field {
+  char *name;
+  int idx;
+  struct _Type *type;
+}Field;
+
 // Structure for storing the global symbol table
 typedef struct _GSymbol {
   char* name;
-  enum VARTYPE type;
+  Type *type;
   int size;
   int binding;
   tnode* params;
   Frame* frame;
 } GSymbol;
 
-extern LinkedList *GSymList, *LSymList;
-extern enum STATUS registers[20];
+// structure for storing the local symbol table
+typedef struct _LSymbol {
+  char* name;  
+  Type *type;
+  int size;
+  int binding;
+} LSymbol;
+
+//---------------------------------------------
+
+extern LinkedList *GSymList, *LSymList, *TypeList;
+//Last label used
 extern int label;
 
-/*Create a node tnode*/
 
+//----------------Helper functions---------------------
+
+/*Create a node AST node*/
 tnode* createNode(enum TYPE type, char* s, int n, tnode* l, tnode* r);
+//connect two AST nodes
 tnode* connect(tnode* first, tnode* second);
+
+
+//Merge two linkedlist
 LinkedList* connectList(LinkedList* first, LinkedList *second, size_t size);
+//Adds a node to a linkedlist
 LinkedList* addNode(void*, size_t, LinkedList*);
-void* searchSymbol(char*, LinkedList*);
+//copy a linkedlist
 LinkedList* copyList(LinkedList*, size_t);
+
+//search in the symbol table
+void* searchSymbol(char*, LinkedList*);
+//search in the type table
+void* searchType(char*, LinkedList*);
+//search and return field index
+int searchField(char*, LinkedList*);
+
+//create a label node (if time permits use generic addNode())
 LabelList* createLlistNode(int, int, LabelList*);
 LabelList* deleteLlistNode(LabelList*);
+//Get a label from the labelstore
 int getLabel();
 // Get a register
 reg_index getReg(Frame*);
