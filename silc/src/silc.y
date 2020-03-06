@@ -7,7 +7,8 @@
 	int yylex(void);
     int yyerror(char*);
     FILE *out, *yyin;
-    LinkedList *GSymList, *LSymList, *LVarList, *GVarList, *TypeList;
+    LinkedList *GSymList, *LSymList, *LVarList, *GVarList, *TypeList, *curLvar;
+    Frame *curFrame;
     int curMemory;
 
     void checkArg(tnode* sym, tnode* arg) {
@@ -24,9 +25,21 @@
         checkArg(sym->right, arg->right);
     }
 
-    GSymbol* getSymbol(char *name) {
-
+    Type* getSymbol(char *name) {
+        GSymbol* sym = searchSymbol(name, curLvar);
+        if (sym) {  // local variable
+            return sym->type;
+        } else {
+            sym = searchSymbol(name, GSymList);
+            if (sym) {  // global variable
+                return sym->type;
+            } else {
+                yyerror("Undefined variable");
+                return NULL;
+            }
+        } 
     }
+    
 %}
 
 %locations
@@ -41,7 +54,7 @@
 }
 
 %type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT mainblock
-%type <no> param paramlist fdef return arg args funccall funcstmt init alloc
+%type <no> param paramlist fdef return arg args funccall funcstmt init alloc params
 %type <name> _ID type field
 %type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock fieldlst
 %type <field> fielddef
@@ -91,8 +104,8 @@ program : typedefblock gdeclblock fdefblock mainblock
 
  /*--------------------------------------------------------Type defintion-----------------------------------------------------------------*/
 
- typedefblock : typedefblock typedef                   {}
-                | typedef                                {}
+ typedefblock : typedefblock typedef                      {}
+                | typedef                                 {}
                 ;
 
 fielddef : type _ID _SEMI                                 { Field *field = (Field*)malloc(sizeof(Field));
@@ -106,7 +119,8 @@ fieldlst : fieldlst fielddef                               { $2->idx = ((Field*)
          | fielddef                                        { $1->idx = 1; $$ = addNode($1, sizeof(Field), NULL); }
          ;
 
-typedef : _TYPE _ID '{' fieldlst '}' _ENDTYPE             { Type *type = (Type*)malloc(sizeof(Type));
+typedef : _TYPE _ID '{' fieldlst '}' _ENDTYPE             { if(searchType($2, TypeList)!=NULL) yyerror("Type is already defined");
+                                                            Type *type = (Type*)malloc(sizeof(Type));
                                                             *type = (Type){.name=$2, .fields=$4};
                                                             LinkedList *field = type->fields;
                                                             int size = 0;
@@ -203,12 +217,10 @@ ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE
          stmtList _ENDIF _SEMI                          {
                                                             tnode *tmp = createNode(IF_BODY, "", -1, $6, $8);
                                                             $$ = createNode(IF, "", -1, $3, tmp);
-                                                            printf("%s %s\n", $3->right->varname, $3->left->varname);
                                                         }
        | _IF '(' expr ')' _THEN stmtList _ENDIF _SEMI   {
                                                             tnode *tmp = createNode(IF_BODY, "", -1, $6, NULL);
                                                             $$ = createNode(IF, "", -1, $3, tmp);
-                                                            printf("%s %s\n", $3->right->varname, $3->left->varname);
                                                         }
        ;
 
@@ -278,16 +290,19 @@ ldeclblock : _DECL ldecllist  _ENDDECL                  { $$ = $2;}
         
 ldecl : type lvarlist _SEMI                             {
                                                             LinkedList* gvars = $2;
-                                                            $$ = NULL;
+                                                            LinkedList *tmp1;
+                                                            tmp1 = NULL;
                                                             while(gvars) {
                                                                 char *var = (char*)(gvars->data);
                                                                 LSymbol* tmp = (LSymbol*)malloc(sizeof(LSymbol));
                                                                 Type *type = (Type*)searchType($1, TypeList);
                                                                 if(type==NULL) yyerror("Undefined type");
                                                                 *tmp = (LSymbol){.name=var, .type=type, .size=1};
-                                                                $$ = addNode(tmp, sizeof(LSymbol), $$);
+                                                                tmp1 = addNode(tmp, sizeof(LSymbol), tmp1);
                                                                 gvars = gvars->next;
                                                             }
+                                                            $$ = tmp1;
+                                                            curLvar = tmp1;
                                                         }
      ;
 lvarlist : lvarlist _COMMA _ID                          {$$ = addNode(strdup($3), sizeof($3), $1);}
@@ -370,11 +385,17 @@ fdefblock : fdefblock fdef                              {
           ;
 
 fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'   {
+                                                                    GSymbol* tmp = searchSymbol($2, GSymList);                                                                    
+                                                                    if(tmp == NULL) yyerror("Function is not declared");
+                                                                    if(tmp->frame != NULL) yyerror("Function is already defined");
+                                                                    checkArg(tmp->params, $4);
                                                                     Frame *frame = (Frame*)malloc(sizeof(Frame));
-                                                                    frame->Lvars = $7;    
-                                                                    addArgSymbol($4, frame, -3, out);
+                                                                    frame->Lvars = $7;
+                                                                    tmp->frame = frame;
+                                                                    tmp->type = searchType($1, TypeList); 
+                                                                    addArgSymbol($4, tmp->frame, -3, out);                                                                 
                                                                     if($10->left->type == VAR) {  
-                                                                        LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname, $7);
+                                                                        LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname, tmp->frame->Lvars);
                                                                         if(sym && strcmp($1, sym->type->name)) yyerror("Return type is not correct");
                                                                         if(!sym) {
                                                                             LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname,GSymList);
@@ -382,15 +403,13 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
                                                                         }
                                                                     } else if(strcmp($1, $10->left->vartype->name)) yyerror("Return type is not correct");
                                                                     $$ = createNode(FUNC, $2, -1, connect($9, $10), $4); $$->vartype = searchType($1, TypeList);
-                                                                    GSymbol* tmp = searchSymbol($2, GSymList);
-                                                                    if(tmp == NULL) yyerror("Function is not declared");
-                                                                    tmp->frame = frame;
-                                                                    tmp->type = $$->vartype;
-                                                                    }
+                                                                    }                                                                  
                                                                     
             ;
 
-paramlist : paramlist _COMMA param                      { $$ = connect($3, $1);}
+paramlist : params                                      {}
+          ;
+params : params _COMMA param                            { $$ = connect($3, $1);}
           | param                                       { $$ = $1;}
           |                                             { $$ = NULL;}
           ;
@@ -416,6 +435,7 @@ int main(int argc, char **argv) {
     LSymList = NULL;
     LVarList = NULL;
     GVarList = NULL;
+    curLvar = NULL;
     Type *type = (Type*)malloc(sizeof(Type));
     *type = (Type){.name="int", .size=1, .fields=NULL};
     TypeList = addNode(type, sizeof(Type), TypeList);
