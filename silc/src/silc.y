@@ -4,6 +4,7 @@
 	#include "evaluators.h"
     #include <string.h>
     #include "datastructures.h"
+
 	int yylex(void);
     int yyerror(char*);
     FILE *out, *yyin;
@@ -25,21 +26,59 @@
         checkArg(sym->right, arg->right);
     }
 
-    Type* getSymbol(char *name) {
+    Type* getSymbol(char *sname) {
+        char *name = strtok(sname, ".");
+        LOG("symbol", sname)
         GSymbol* sym = searchSymbol(name, curLvar);
         if (sym) {  // local variable
-            return sym->type;
+            LOG("local", sym->type->name);
+            Field* field = NULL;
+            char *tok;
+            while((tok = strtok(NULL, "."))) {
+                field = getField(tok, sym->type->fields);
+                LOG("field", tok)
+                if(!field) yyerror("Undefined field");
+            }
+            return field?field->type:sym->type;            
         } else {
             sym = searchSymbol(name, GSymList);
             if (sym) {  // global variable
-                return sym->type;
+                Field* field = NULL;
+                char *tok;
+                while((tok = strtok(NULL, "."))) {
+                    field = getField(tok, sym->type->fields);
+                    if(!field) yyerror("Undefined field");
+                }
+                return field?field->type:sym->type; 
             } else {
+                printf("%s", sname);
                 yyerror("Undefined variable");
                 return NULL;
             }
         } 
     }
-    
+
+    LinkedList* addParam(tnode *root) {
+        if(root == NULL) return NULL;
+        LinkedList *res = NULL;
+        if(root->type != CONN) {
+            res = (LinkedList*)malloc(sizeof(LinkedList));
+            LSymbol* tmp = malloc(sizeof(LSymbol));
+            *tmp = (LSymbol){.name = root->varname, .type = root->vartype};
+            res->data = (void*)tmp;
+            res->next = NULL;
+            return res;
+        }else {
+            LinkedList *right = addParam(root->right);
+            LinkedList *left = addParam(root->left);
+            if(right) {
+                right->next = left;
+                return right;
+            }
+            return left;
+        }
+
+    }
 %}
 
 %locations
@@ -90,7 +129,8 @@ program : typedefblock gdeclblock fdefblock mainblock
 
  /*--------------------------------------------------------Main-----------------------------------------------------------------*/
 
- mainblock : _ID _MAIN '(' ')' '{' ldeclblock _BEGIN stmtList return  _END '}'      {tnode *node = createNode(FUNC, "main", -1, connect($8,$9), NULL); $$->vartype = 0;
+ mainblock : _ID _MAIN '(' ')' '{' ldeclblock _BEGIN stmtList return  _END '}'      {
+                                                             tnode *node = createNode(FUNC, "main", -1, connect($8,$9), NULL); $$->vartype = 0;
                                                              GSymbol* tmp = malloc(sizeof(GSymbol));
                                                              Frame *frame = (Frame*)malloc(sizeof(Frame));
                                                              frame->Lvars = $6;
@@ -109,7 +149,8 @@ program : typedefblock gdeclblock fdefblock mainblock
                 ;
 
 fielddef : type _ID _SEMI                                 { Field *field = (Field*)malloc(sizeof(Field));
-                                                            *field = (Field){.name=$2, .type=searchType($1, TypeList)};
+                                                            Type *type = searchType($1, TypeList);
+                                                            *field = type?(Field){.name=$2, .type=type}:(Field){.name=$2, .ndef=$1};
                                                             $$ = field;
                                                           }
       ;
@@ -126,6 +167,11 @@ typedef : _TYPE _ID '{' fieldlst '}' _ENDTYPE             { if(searchType($2, Ty
                                                             int size = 0;
                                                             while(field) {
                                                                 size++;
+                                                                if(!((Field*)field->data)->type) {
+                                                                    if(!strcmp(((Field*)field->data)->ndef, $2)) 
+                                                                        ((Field*)field->data)->type = type;
+                                                                    else yyerror("Undefined Type");
+                                                                }
                                                                 field = field->next;
                                                             }
                                                             type->size = size;
@@ -180,37 +226,41 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
 
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1; $$->vartype = searchType("int", TypeList);}
-     | _ID                                              {$$ = createNode(VAR, $1, -1, NULL, NULL);}
+     | _ID                                              {$$ = createNode(VAR, $1, -1, NULL, NULL); $$->vartype = getSymbol($1);}
      | _ID '[' expr ']'                                 {$$ = createNode(VAR, $1, -1, $3, NULL);}
      | _TEXT                                            {$$ = $1; $$->vartype = searchType("str", TypeList);}
      | funccall                                         {$$ = $1;}
-     | field                                            {$$ = createNode(VAR, $1, -1, NULL, NULL);}
-     | _NULL                                            {$$ = createNode(CONST, "\0", 0, NULL, NULL); $$->vartype = searchType("int", TypeList);} 
+     | field                                            {$$ = createNode(VAR, $1, -1, NULL, NULL);$$->vartype = getSymbol($1);}
+     | _NULL                                            {$$ = createNode(CONST, "\0", 0, NULL, NULL); $$->vartype = searchType("null", TypeList);} 
 	 ;
 
 return : _RET expr _SEMI                                {$$ = createNode(RET, "\0", -1, $2, NULL);}
         ;
 
 
-read : _READ '(' _ID ')' _SEMI                          {$$ = createNode(READ, "", -1, createNode(VAR, $3, -1, NULL, NULL), NULL);}
-     | _READ '(' _ID '[' expr ']' ')' _SEMI             {$$ = createNode(READ, "", -1, createNode(VAR, $3, -1, $5, NULL), NULL);}
-     | _READ '(' field ')' _SEMI                          {$$ = createNode(READ, "", -1, createNode(VAR, $3, -1, NULL, NULL), NULL);}
+read : _READ '(' _ID ')' _SEMI                          {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getSymbol($3);
+                                                        $$ = createNode(READ, "", -1, tmp, NULL);}
+     | _READ '(' _ID '[' expr ']' ')' _SEMI             {tnode *tmp = createNode(VAR, $3, -1, $5, NULL);tmp->vartype = getSymbol($3);
+                                                        $$ = createNode(READ, "", -1, tmp, NULL);}
+     | _READ '(' field ')' _SEMI                        {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getSymbol($3);
+                                                        $$ = createNode(READ, "", -1, tmp, NULL);}
      ;
      
-init : _INIT '(' ')'                                      {$$ = createNode(INIT, "", -1, NULL, NULL);}
+init : _INIT '(' ')'                                      {$$ = createNode(INIT, "", -1, NULL, NULL);$$->vartype = searchType("int", TypeList);}
      ;
 
-alloc : _ALLOC '(' ')'                                 {$$ = createNode(ALLOC, "", -1, NULL, NULL);}
+alloc : _ALLOC '(' ')'                                 {$$ = createNode(ALLOC, "", -1, NULL, NULL); $$->vartype = searchType("int", TypeList);}
       ;
 
 write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
-assgn : _ID _EQUALS expr _SEMI                          { 
-                                                         $$ = createNode(ASSN, "", -1, createNode(VAR, $1, -1, NULL, NULL), $3);}
-      | _ID '[' expr ']' _EQUALS expr _SEMI             {
-                                                         $$ = createNode(ASSN, "", -1, createNode(VAR, $1, -1, $3, NULL), $6);}
-      | field _EQUALS expr _SEMI                        {$$ = createNode(ASSN, "", -1, createNode(VAR, $1, -1, NULL, NULL), $3);}
+assgn : _ID _EQUALS expr _SEMI                          { tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getSymbol($1);
+                                                         $$ = createNode(ASSN, "", -1, tmp, $3);}
+      | _ID '[' expr ']' _EQUALS expr _SEMI             {tnode *tmp = createNode(VAR, $1, -1, $3, NULL);tmp->vartype = getSymbol($1);
+                                                         $$ = createNode(ASSN, "", -1, tmp, $6);}
+      | field _EQUALS expr _SEMI                        {tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getSymbol($1);
+                                                        $$ = createNode(ASSN, "", -1, tmp, $3);}
       ;
 
 ifstmt : _IF '(' expr ')' _THEN stmtList _ELSE
@@ -288,21 +338,19 @@ ldeclblock : _DECL ldecllist  _ENDDECL                  { $$ = $2;}
          ;
 
         
-ldecl : type lvarlist _SEMI                             {
+ldecl : type lvarlist _SEMI                             {   $$ = NULL;
                                                             LinkedList* gvars = $2;
-                                                            LinkedList *tmp1;
-                                                            tmp1 = NULL;
                                                             while(gvars) {
                                                                 char *var = (char*)(gvars->data);
                                                                 LSymbol* tmp = (LSymbol*)malloc(sizeof(LSymbol));
                                                                 Type *type = (Type*)searchType($1, TypeList);
                                                                 if(type==NULL) yyerror("Undefined type");
                                                                 *tmp = (LSymbol){.name=var, .type=type, .size=1};
-                                                                tmp1 = addNode(tmp, sizeof(LSymbol), tmp1);
+                                                                $$ = addNode(tmp, sizeof(LSymbol), $$);
                                                                 gvars = gvars->next;
                                                             }
-                                                            $$ = tmp1;
-                                                            curLvar = tmp1;
+                                                            LinkedList *copy = copyList($$, sizeof(LSymbol));
+                                                            curLvar = connectList(curLvar, copy, sizeof(LSymbol));
                                                         }
      ;
 lvarlist : lvarlist _COMMA _ID                          {$$ = addNode(strdup($3), sizeof($3), $1);}
@@ -393,7 +441,6 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
                                                                     frame->Lvars = $7;
                                                                     tmp->frame = frame;
                                                                     tmp->type = searchType($1, TypeList); 
-                                                                    addArgSymbol($4, tmp->frame, -3, out);                                                                 
                                                                     if($10->left->type == VAR) {  
                                                                         LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname, tmp->frame->Lvars);
                                                                         if(sym && strcmp($1, sym->type->name)) yyerror("Return type is not correct");
@@ -403,11 +450,12 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
                                                                         }
                                                                     } else if(strcmp($1, $10->left->vartype->name)) yyerror("Return type is not correct");
                                                                     $$ = createNode(FUNC, $2, -1, connect($9, $10), $4); $$->vartype = searchType($1, TypeList);
+                                                                    curLvar = NULL;
                                                                     }                                                                  
                                                                     
             ;
 
-paramlist : params                                      {}
+paramlist : params                                      {curLvar = addParam($1); $$ = $1;}
           ;
 params : params _COMMA param                            { $$ = connect($3, $1);}
           | param                                       { $$ = $1;}
@@ -444,7 +492,9 @@ int main(int argc, char **argv) {
     *type = (Type){.name="bool", .size=1, .fields=NULL};
     TypeList = addNode(type, sizeof(Type), TypeList);     
     *type = (Type){.name="void", .size=0, .fields=NULL};
-    TypeList = addNode(type, sizeof(Type), TypeList);       
+    TypeList = addNode(type, sizeof(Type), TypeList);
+    *type = (Type){.name="null", .size=0, .fields=NULL};
+    TypeList = addNode(type, sizeof(Type), TypeList);     
     yyin = fopen(argv[1], "r");
     if(yyin == NULL) yyerror("Input file not found");
 	out = fopen("./out.xsm", "w");

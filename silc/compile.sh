@@ -4,7 +4,7 @@ SILC="/home/athul/Workspace/compiler_lab"
 wd=`pwd`
 
 cd $SILC/silc;
-./silc $1;
+taskset -c 0 ./silc $1;
 
 if test $? -eq 0
 then

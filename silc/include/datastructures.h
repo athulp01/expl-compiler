@@ -6,6 +6,13 @@ create the abstract symbol treee
 #include <stdio.h>
 #include <stdlib.h>
 
+
+#ifdef DEBUG
+#define LOG(s1, s2) printf("DEBUG | %s : %s\n", s1, s2);
+#else
+#define LOG(s1, s2) if(0);
+#endif
+
 /* -----------------Enums--------------*/
 
 //Register use status
@@ -95,6 +102,7 @@ typedef struct _Field {
   char *name;
   int idx;
   struct _Type *type;
+  char *ndef;
 }Field;
 
 // Structure for storing the global symbol table
@@ -143,6 +151,7 @@ void* searchSymbol(char*, LinkedList*);
 void* searchType(char*, LinkedList*);
 //search and return field index
 int searchField(char*, LinkedList*);
+Field* getField(char*, LinkedList*);
 
 //create a label node (if time permits use generic addNode())
 LabelList* createLlistNode(int, int, LabelList*);

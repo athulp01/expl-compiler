@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "evaluators.h"
 
+
 int yyerror(char*);
 int label = 0;
 
@@ -25,6 +26,14 @@ int searchField(char *s, LinkedList *front) {
   return 0;
 }
 
+Field* getField(char *s, LinkedList *front) {
+  while(front) {
+    Field* field = (Field*)front->data;
+    if(!strcmp(field->name, s)) return field;
+    front = front->next;
+  }
+  return NULL;
+}
 tnode* createNode(enum TYPE type, char* s, int n, tnode* l,
                   tnode* r) {
   tnode* tmp = (tnode*)malloc(sizeof(tnode));
@@ -33,6 +42,27 @@ tnode* createNode(enum TYPE type, char* s, int n, tnode* l,
   tmp->val = n;
   tmp->left = l;
   tmp->right = r;
+  switch (type)
+  {
+  case ASSN:
+  case OP:
+    if(r->type == ALLOC) {
+      if(!strcmp(l->vartype->name, "int") || !strcmp(l->vartype->name, "str"))
+          yyerror("Dynamic allocation is possible only for user defined types");
+      break;
+    }
+    if(!strcmp(r->vartype->name, "null")) {
+      if(!strcmp(l->vartype->name, "int") || !strcmp(l->vartype->name, "str"))
+        yyerror("Null can be only assigned to user defined type");
+    }else if(strcmp(l->vartype->name, r->vartype->name))
+      yyerror("Type mismatch");
+    break;
+  case WRITE:
+  case READ:
+    if(strcmp(l->vartype->name, "int") && !strcmp(l->vartype->name, "str"))
+      yyerror("Type mismatch");
+    break;
+  }
   return tmp;
 }
 
@@ -76,6 +106,7 @@ LinkedList* copyList(LinkedList* start, size_t dataSize) {
 
 LinkedList* connectList(LinkedList* first, LinkedList *second, size_t size) {
   LinkedList *tmp = first;
+  if(!first) return second;
   while(first->next) {
     first = first->next;
   }
