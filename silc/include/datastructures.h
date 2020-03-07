@@ -36,6 +36,7 @@ enum TYPE {
   RET,
   INIT,
   ALLOC,
+  FFREE,
 };
 
 //Deprecated! Use Type instead.

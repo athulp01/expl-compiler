@@ -58,6 +58,7 @@
 "initialize" {return _INIT;}
 "alloc" {return _ALLOC;}
 "null" {return _NULL;}
+"free" {return _FREE;}
 [a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
 \"(\\.|[^"\\])*\" {yylval.no = createNode(CONST, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 

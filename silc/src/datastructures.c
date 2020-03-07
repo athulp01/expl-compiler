@@ -44,6 +44,10 @@ tnode* createNode(enum TYPE type, char* s, int n, tnode* l,
   tmp->right = r;
   switch (type)
   {
+  case FFREE:
+          if(!strcmp(l->vartype->name, "int") || !strcmp(l->vartype->name, "str"))
+          yyerror("Only for user defined types can be freed");
+      break;
   case ASSN:
   case OP:
     if(r->type == ALLOC) {

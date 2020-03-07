@@ -91,13 +91,13 @@
 }
 
 %type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT mainblock
-%type <no> param paramlist fdef return arg args funccall funcstmt init alloc params
-%type <name> _ID type field
+%type <no> param paramlist fdef return arg args funccall funcstmt init alloc params free
+%type <name> _ID type field 
 %type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock fieldlst
 %type <field> fielddef
 
 %token _DECL _ENDDECL _INT _STR _TEXT _MAIN _RET _TYPE _ENDTYPE _NULL
-%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND _INIT _ALLOC
+%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND _INIT _ALLOC _FREE
 %token _LT _GT _EQ _NE _LE _GE
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD 
 %token _ID _NUM
@@ -250,6 +250,10 @@ init : _INIT '(' ')'                                      {$$ = createNode(INIT,
 alloc : _ALLOC '(' ')'                                 {$$ = createNode(ALLOC, "", -1, NULL, NULL); $$->vartype = searchType("int", TypeList);}
       ;
 
+free : _FREE '(' _ID ')' _SEMI                          {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getSymbol($3);
+                                                        $$ = createNode(FFREE, "", -1, tmp, NULL);}
+     ;
+
 write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
@@ -290,6 +294,7 @@ stmt : read                                             {$$ = $1;}
      | break                                            {$$ = $1;}
      | cont                                             {$$ = $1;}
      | funcstmt                                         {$$ = $1;}
+     | free                                             {$$ = $1;}
      ;
 
 stmtList : stmtList stmt                                {$$ = connect($1, $2);}

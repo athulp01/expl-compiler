@@ -28,3 +28,4 @@ void eval_return(tnode *root, Frame *frame, FILE *out);
 void pushArgToStack(tnode* root, Frame* frame, FILE* out);
 int addArgSymbol(tnode* root, Frame* frame, int mem, FILE* out);
 reg_index getAddress(tnode*, Frame *frame, FILE *out);
+void eval_free(tnode *root, Frame *frame, FILE *out);

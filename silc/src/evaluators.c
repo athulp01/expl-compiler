@@ -61,6 +61,9 @@ void eval_tree(tnode* root, Frame* frame, FILE* out) {
     return;
   eval_tree(root->left, frame, out);
   switch (root->type) {
+    case FFREE:
+      eval_free(root ,frame, out);
+      break;
     case READ:
       eval_read(root, frame, out);
       break;
@@ -372,4 +375,20 @@ reg_index eval_alloc(int size, Frame *frame, FILE *out) {
   freeReg(frame);
   getRegFromStack(frame, out);
   return addr;
+}
+
+void eval_free(tnode *root, Frame *frame, FILE *out) {
+  pushRegToStack(frame, out);
+  reg_index mem = getAddress(root->left, frame, out);
+  reg_index addr = getReg(frame), tmp = getReg(frame);
+  fprintf(out, "MOV R%d, [R%d]\n",addr, mem);
+  fprintf(out, "MOV R%d, \"Free\"\nPUSH R%d\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", tmp, tmp, addr, addr, addr);
+  fprintf(out, "PUSH R%d\nCALL 0\n", addr);
+  freeReg(frame);
+  freeReg(frame);
+  freeReg(frame);
+  tmp = getReg(frame);
+  fprintf(out, "POP R%d\nPOP R%d\nPOP R%d\nPOP R%d\nPOP R%d\n", addr, tmp, tmp, tmp, tmp);
+  freeReg(frame);
+  getRegFromStack(frame, out);
 }

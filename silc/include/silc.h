@@ -71,27 +71,28 @@ extern int yydebug;
     _AND = 277,
     _INIT = 278,
     _ALLOC = 279,
-    _LT = 280,
-    _GT = 281,
-    _EQ = 282,
-    _NE = 283,
-    _LE = 284,
-    _GE = 285,
-    _PLUS = 286,
-    _MINUS = 287,
-    _MUL = 288,
-    _DIV = 289,
-    _END = 290,
-    _BEGIN = 291,
-    _READ = 292,
-    _WRITE = 293,
-    _SEMI = 294,
-    _EQUALS = 295,
-    _Q = 296,
-    _COMMA = 297,
-    _MOD = 298,
-    _ID = 299,
-    _NUM = 300
+    _FREE = 280,
+    _LT = 281,
+    _GT = 282,
+    _EQ = 283,
+    _NE = 284,
+    _LE = 285,
+    _GE = 286,
+    _PLUS = 287,
+    _MINUS = 288,
+    _MUL = 289,
+    _DIV = 290,
+    _END = 291,
+    _BEGIN = 292,
+    _READ = 293,
+    _WRITE = 294,
+    _SEMI = 295,
+    _EQUALS = 296,
+    _Q = 297,
+    _COMMA = 298,
+    _MOD = 299,
+    _ID = 300,
+    _NUM = 301
   };
 #endif
 /* Tokens.  */
@@ -117,27 +118,28 @@ extern int yydebug;
 #define _AND 277
 #define _INIT 278
 #define _ALLOC 279
-#define _LT 280
-#define _GT 281
-#define _EQ 282
-#define _NE 283
-#define _LE 284
-#define _GE 285
-#define _PLUS 286
-#define _MINUS 287
-#define _MUL 288
-#define _DIV 289
-#define _END 290
-#define _BEGIN 291
-#define _READ 292
-#define _WRITE 293
-#define _SEMI 294
-#define _EQUALS 295
-#define _Q 296
-#define _COMMA 297
-#define _MOD 298
-#define _ID 299
-#define _NUM 300
+#define _FREE 280
+#define _LT 281
+#define _GT 282
+#define _EQ 283
+#define _NE 284
+#define _LE 285
+#define _GE 286
+#define _PLUS 287
+#define _MINUS 288
+#define _MUL 289
+#define _DIV 290
+#define _END 291
+#define _BEGIN 292
+#define _READ 293
+#define _WRITE 294
+#define _SEMI 295
+#define _EQUALS 296
+#define _Q 297
+#define _COMMA 298
+#define _MOD 299
+#define _ID 300
+#define _NUM 301
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -152,7 +154,7 @@ union YYSTYPE
     Field* field;
 	
 
-#line 156 "./include/silc.h"
+#line 158 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
