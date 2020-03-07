@@ -225,7 +225,7 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1; $$->vartype = searchType("int", TypeList);}
      | _ID                                              {$$ = createNode(VAR, $1, -1, NULL, NULL); $$->vartype = getSymbol($1);}
-     | _ID '[' expr ']'                                 {$$ = createNode(VAR, $1, -1, $3, NULL);}
+     | _ID '[' expr ']'                                 {$$ = createNode(VAR, $1, -1, $3, NULL);$$->vartype = getSymbol($1);}
      | _TEXT                                            {$$ = $1; $$->vartype = searchType("str", TypeList);}
      | funccall                                         {$$ = $1;}
      | field                                            {$$ = createNode(VAR, $1, -1, NULL, NULL);$$->vartype = getSymbol($1);}

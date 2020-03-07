@@ -1894,7 +1894,7 @@ yyreduce:
 
   case 32:
 #line 228 "./src/silc.y"
-    {(yyval.no) = createNode(VAR, (yyvsp[-3].name), -1, (yyvsp[-1].no), NULL);}
+    {(yyval.no) = createNode(VAR, (yyvsp[-3].name), -1, (yyvsp[-1].no), NULL);(yyval.no)->vartype = getSymbol((yyvsp[-3].name));}
 #line 1899 "./src/y.tab.c"
     break;
 
