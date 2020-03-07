@@ -95,17 +95,15 @@
         checkArg(sym->right, arg->right);
     }
 
-    Type* getSymbol(char *sname) {
+    Type* getSymbol(char *oname) {
+        char *sname = strdup(oname);
         char *name = strtok(sname, ".");
-        LOG("symbol", sname)
         GSymbol* sym = searchSymbol(name, curLvar);
         if (sym) {  // local variable
-            LOG("local", sym->type->name);
             Field* field = NULL;
             char *tok;
             while((tok = strtok(NULL, "."))) {
                 field = getField(tok, sym->type->fields);
-                LOG("field", tok)
                 if(!field) yyerror("Undefined field");
             }
             return field?field->type:sym->type;            
@@ -149,7 +147,7 @@
 
     }
 
-#line 153 "./src/y.tab.c"
+#line 151 "./src/y.tab.c"
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus
@@ -282,7 +280,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 86 "./src/silc.y"
+#line 84 "./src/silc.y"
 
 	tnode *no;
     char *name;
@@ -291,7 +289,7 @@ union YYSTYPE
     Field* field;
 	
 
-#line 295 "./src/y.tab.c"
+#line 293 "./src/y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -617,16 +615,16 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   119,   119,   120,   121,   122,   123,   124,   132,   147,
-     148,   151,   158,   160,   163,   182,   184,   191,   194,   197,
-     200,   203,   206,   209,   212,   215,   218,   221,   224,   227,
-     228,   229,   230,   231,   232,   233,   234,   237,   241,   243,
-     245,   249,   252,   255,   258,   260,   262,   266,   271,   277,
-     280,   283,   287,   288,   289,   290,   291,   292,   293,   294,
-     297,   298,   302,   303,   306,   307,   309,   314,   315,   317,
-     325,   332,   333,   336,   337,   341,   356,   357,   365,   366,
-     369,   370,   374,   391,   396,   401,   406,   411,   416,   426,
-     430,   435,   458,   460,   461,   462,   465
+       0,   117,   117,   118,   119,   120,   121,   122,   130,   145,
+     146,   149,   156,   158,   161,   180,   182,   189,   192,   195,
+     198,   201,   204,   207,   210,   213,   216,   219,   222,   225,
+     226,   227,   228,   229,   230,   231,   232,   235,   239,   241,
+     243,   247,   250,   253,   256,   258,   260,   264,   269,   275,
+     278,   281,   285,   286,   287,   288,   289,   290,   291,   292,
+     295,   296,   300,   301,   304,   305,   307,   312,   313,   315,
+     323,   330,   331,   334,   335,   339,   354,   355,   363,   364,
+     367,   368,   372,   389,   394,   399,   404,   409,   414,   424,
+     428,   433,   451,   453,   454,   455,   458
 };
 #endif
 
@@ -1707,7 +1705,7 @@ yyreduce:
   switch (yyn)
     {
   case 8:
-#line 132 "./src/silc.y"
+#line 130 "./src/silc.y"
     {
                                                              tnode *node = createNode(FUNC, "main", -1, connect((yyvsp[-3].no),(yyvsp[-2].no)), NULL); (yyval.no)->vartype = 0;
                                                              GSymbol* tmp = malloc(sizeof(GSymbol));
@@ -1718,46 +1716,46 @@ yyreduce:
                                                              fprintf(out ,"main:\nBRKP\n");
                                                              eval_func(node, out);
                                                             }
-#line 1722 "./src/y.tab.c"
+#line 1720 "./src/y.tab.c"
     break;
 
   case 9:
-#line 147 "./src/silc.y"
+#line 145 "./src/silc.y"
     {}
-#line 1728 "./src/y.tab.c"
+#line 1726 "./src/y.tab.c"
     break;
 
   case 10:
-#line 148 "./src/silc.y"
+#line 146 "./src/silc.y"
     {}
-#line 1734 "./src/y.tab.c"
+#line 1732 "./src/y.tab.c"
     break;
 
   case 11:
-#line 151 "./src/silc.y"
+#line 149 "./src/silc.y"
     { Field *field = (Field*)malloc(sizeof(Field));
                                                             Type *type = searchType((yyvsp[-2].name), TypeList);
                                                             *field = type?(Field){.name=(yyvsp[-1].name), .type=type}:(Field){.name=(yyvsp[-1].name), .ndef=(yyvsp[-2].name)};
                                                             (yyval.field) = field;
                                                           }
-#line 1744 "./src/y.tab.c"
+#line 1742 "./src/y.tab.c"
     break;
 
   case 12:
-#line 158 "./src/silc.y"
+#line 156 "./src/silc.y"
     { (yyvsp[0].field)->idx = ((Field*)(yyvsp[-1].list)->data)->idx + 1;
                                                              (yyval.list) = addNode((yyvsp[0].field), sizeof(Field), (yyvsp[-1].list));}
-#line 1751 "./src/y.tab.c"
+#line 1749 "./src/y.tab.c"
     break;
 
   case 13:
-#line 160 "./src/silc.y"
+#line 158 "./src/silc.y"
     { (yyvsp[0].field)->idx = 1; (yyval.list) = addNode((yyvsp[0].field), sizeof(Field), NULL); }
-#line 1757 "./src/y.tab.c"
+#line 1755 "./src/y.tab.c"
     break;
 
   case 14:
-#line 163 "./src/silc.y"
+#line 161 "./src/silc.y"
     { if(searchType((yyvsp[-4].name), TypeList)!=NULL) yyerror("Type is already defined");
                                                             Type *type = (Type*)malloc(sizeof(Type));
                                                             *type = (Type){.name=(yyvsp[-4].name), .fields=(yyvsp[-2].list)};
@@ -1775,401 +1773,401 @@ yyreduce:
                                                             type->size = size;
                                                              TypeList = addNode(type, sizeof(Type), TypeList);
                                                            }
-#line 1779 "./src/y.tab.c"
+#line 1777 "./src/y.tab.c"
     break;
 
   case 15:
-#line 182 "./src/silc.y"
+#line 180 "./src/silc.y"
     {char *tmp = (char*)malloc(strlen((yyvsp[-2].name)) + strlen((yyvsp[0].name)) + 1);
                                                             strcpy(tmp, (yyvsp[-2].name)); strcat(tmp, ".");strcat(tmp, (yyvsp[0].name)); (yyval.name) = tmp;}
-#line 1786 "./src/y.tab.c"
+#line 1784 "./src/y.tab.c"
     break;
 
   case 16:
-#line 184 "./src/silc.y"
+#line 182 "./src/silc.y"
     {char *tmp = (char*)malloc(strlen((yyvsp[-2].name)) + strlen((yyvsp[0].name)) + 1);
                                                             strcpy(tmp, (yyvsp[-2].name)); strcat(tmp, ".");strcat(tmp, (yyvsp[0].name)); (yyval.name) = tmp;}
-#line 1793 "./src/y.tab.c"
+#line 1791 "./src/y.tab.c"
     break;
 
   case 17:
-#line 191 "./src/silc.y"
+#line 189 "./src/silc.y"
     {(yyval.no) = createNode(OP, "+", -1, (yyvsp[-2].no), (yyvsp[0].no)); 
                                                         (yyval.no)->vartype = searchType("int", TypeList);}
-#line 1800 "./src/y.tab.c"
+#line 1798 "./src/y.tab.c"
     break;
 
   case 18:
-#line 194 "./src/silc.y"
+#line 192 "./src/silc.y"
     {(yyval.no) = createNode(OP, "-", -1, (yyvsp[-2].no), (yyvsp[0].no)); 
                                                         (yyval.no)->vartype = searchType("int", TypeList);}
-#line 1807 "./src/y.tab.c"
+#line 1805 "./src/y.tab.c"
     break;
 
   case 19:
-#line 197 "./src/silc.y"
+#line 195 "./src/silc.y"
     {(yyval.no) = createNode(OP, "*", -1, (yyvsp[-2].no), (yyvsp[0].no)); 
                                                         (yyval.no)->vartype = searchType("int", TypeList);}
-#line 1814 "./src/y.tab.c"
+#line 1812 "./src/y.tab.c"
     break;
 
   case 20:
-#line 200 "./src/silc.y"
+#line 198 "./src/silc.y"
     {(yyval.no) = createNode(OP, "/", -1, (yyvsp[-2].no), (yyvsp[0].no)); 
                                                         (yyval.no)->vartype = searchType("int", TypeList);}
-#line 1821 "./src/y.tab.c"
+#line 1819 "./src/y.tab.c"
     break;
 
   case 21:
-#line 203 "./src/silc.y"
+#line 201 "./src/silc.y"
     {(yyval.no) = createNode(OP, "<=", -1, (yyvsp[-2].no), (yyvsp[0].no)); 
                                                         (yyval.no)->vartype = searchType("bool", TypeList);}
-#line 1828 "./src/y.tab.c"
+#line 1826 "./src/y.tab.c"
     break;
 
   case 22:
-#line 206 "./src/silc.y"
+#line 204 "./src/silc.y"
     {(yyval.no) = createNode(OP, ">=", -1, (yyvsp[-2].no), (yyvsp[0].no));
                                                         (yyval.no)->vartype = searchType("bool", TypeList);}
-#line 1835 "./src/y.tab.c"
+#line 1833 "./src/y.tab.c"
     break;
 
   case 23:
-#line 209 "./src/silc.y"
+#line 207 "./src/silc.y"
     {(yyval.no) = createNode(OP, "==", -1, (yyvsp[-2].no), (yyvsp[0].no));
                                                         (yyval.no)->vartype = searchType("bool", TypeList);}
-#line 1842 "./src/y.tab.c"
+#line 1840 "./src/y.tab.c"
     break;
 
   case 24:
-#line 212 "./src/silc.y"
+#line 210 "./src/silc.y"
     {(yyval.no) = createNode(OP, "<", -1, (yyvsp[-2].no), (yyvsp[0].no));
                                                         (yyval.no)->vartype = searchType("bool", TypeList);}
-#line 1849 "./src/y.tab.c"
+#line 1847 "./src/y.tab.c"
     break;
 
   case 25:
-#line 215 "./src/silc.y"
+#line 213 "./src/silc.y"
     {(yyval.no) = createNode(OP, ">", -1, (yyvsp[-2].no), (yyvsp[0].no));
                                                         (yyval.no)->vartype = searchType("bool", TypeList);}
-#line 1856 "./src/y.tab.c"
+#line 1854 "./src/y.tab.c"
     break;
 
   case 26:
-#line 218 "./src/silc.y"
+#line 216 "./src/silc.y"
     {(yyval.no) = createNode(OP, "!=", -1, (yyvsp[-2].no), (yyvsp[0].no));
                                                         (yyval.no)->vartype = searchType("bool", TypeList);}
-#line 1863 "./src/y.tab.c"
+#line 1861 "./src/y.tab.c"
     break;
 
   case 27:
-#line 221 "./src/silc.y"
+#line 219 "./src/silc.y"
     {(yyval.no) = createNode(OP, "AND", -1, (yyvsp[-2].no), (yyvsp[0].no));
                                                         (yyval.no)->vartype = searchType("bool", TypeList);}
-#line 1870 "./src/y.tab.c"
+#line 1868 "./src/y.tab.c"
     break;
 
   case 28:
-#line 224 "./src/silc.y"
+#line 222 "./src/silc.y"
     {(yyval.no) = createNode(OP, "%", -1, (yyvsp[-2].no), (yyvsp[0].no));
                                                         (yyval.no)->vartype = searchType("int", TypeList);}
-#line 1877 "./src/y.tab.c"
+#line 1875 "./src/y.tab.c"
     break;
 
   case 29:
-#line 227 "./src/silc.y"
+#line 225 "./src/silc.y"
     {(yyval.no) = (yyvsp[-1].no);}
-#line 1883 "./src/y.tab.c"
+#line 1881 "./src/y.tab.c"
     break;
 
   case 30:
-#line 228 "./src/silc.y"
+#line 226 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no); (yyval.no)->vartype = searchType("int", TypeList);}
-#line 1889 "./src/y.tab.c"
+#line 1887 "./src/y.tab.c"
     break;
 
   case 31:
-#line 229 "./src/silc.y"
+#line 227 "./src/silc.y"
     {(yyval.no) = createNode(VAR, (yyvsp[0].name), -1, NULL, NULL); (yyval.no)->vartype = getSymbol((yyvsp[0].name));}
-#line 1895 "./src/y.tab.c"
+#line 1893 "./src/y.tab.c"
     break;
 
   case 32:
-#line 230 "./src/silc.y"
+#line 228 "./src/silc.y"
     {(yyval.no) = createNode(VAR, (yyvsp[-3].name), -1, (yyvsp[-1].no), NULL);}
-#line 1901 "./src/y.tab.c"
+#line 1899 "./src/y.tab.c"
     break;
 
   case 33:
-#line 231 "./src/silc.y"
+#line 229 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no); (yyval.no)->vartype = searchType("str", TypeList);}
-#line 1907 "./src/y.tab.c"
+#line 1905 "./src/y.tab.c"
     break;
 
   case 34:
-#line 232 "./src/silc.y"
+#line 230 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 1913 "./src/y.tab.c"
+#line 1911 "./src/y.tab.c"
     break;
 
   case 35:
-#line 233 "./src/silc.y"
+#line 231 "./src/silc.y"
     {(yyval.no) = createNode(VAR, (yyvsp[0].name), -1, NULL, NULL);(yyval.no)->vartype = getSymbol((yyvsp[0].name));}
-#line 1919 "./src/y.tab.c"
+#line 1917 "./src/y.tab.c"
     break;
 
   case 36:
-#line 234 "./src/silc.y"
+#line 232 "./src/silc.y"
     {(yyval.no) = createNode(CONST, "\0", 0, NULL, NULL); (yyval.no)->vartype = searchType("null", TypeList);}
-#line 1925 "./src/y.tab.c"
+#line 1923 "./src/y.tab.c"
     break;
 
   case 37:
-#line 237 "./src/silc.y"
+#line 235 "./src/silc.y"
     {(yyval.no) = createNode(RET, "\0", -1, (yyvsp[-1].no), NULL);}
-#line 1931 "./src/y.tab.c"
+#line 1929 "./src/y.tab.c"
     break;
 
   case 38:
-#line 241 "./src/silc.y"
+#line 239 "./src/silc.y"
     {tnode *tmp = createNode(VAR, (yyvsp[-2].name), -1, NULL, NULL);tmp->vartype = getSymbol((yyvsp[-2].name));
                                                         (yyval.no) = createNode(READ, "", -1, tmp, NULL);}
-#line 1938 "./src/y.tab.c"
+#line 1936 "./src/y.tab.c"
     break;
 
   case 39:
-#line 243 "./src/silc.y"
+#line 241 "./src/silc.y"
     {tnode *tmp = createNode(VAR, (yyvsp[-5].name), -1, (yyvsp[-3].no), NULL);tmp->vartype = getSymbol((yyvsp[-5].name));
                                                         (yyval.no) = createNode(READ, "", -1, tmp, NULL);}
-#line 1945 "./src/y.tab.c"
+#line 1943 "./src/y.tab.c"
     break;
 
   case 40:
-#line 245 "./src/silc.y"
+#line 243 "./src/silc.y"
     {tnode *tmp = createNode(VAR, (yyvsp[-2].name), -1, NULL, NULL);tmp->vartype = getSymbol((yyvsp[-2].name));
                                                         (yyval.no) = createNode(READ, "", -1, tmp, NULL);}
-#line 1952 "./src/y.tab.c"
+#line 1950 "./src/y.tab.c"
     break;
 
   case 41:
-#line 249 "./src/silc.y"
+#line 247 "./src/silc.y"
     {(yyval.no) = createNode(INIT, "", -1, NULL, NULL);(yyval.no)->vartype = searchType("int", TypeList);}
-#line 1958 "./src/y.tab.c"
+#line 1956 "./src/y.tab.c"
     break;
 
   case 42:
-#line 252 "./src/silc.y"
+#line 250 "./src/silc.y"
     {(yyval.no) = createNode(ALLOC, "", -1, NULL, NULL); (yyval.no)->vartype = searchType("int", TypeList);}
-#line 1964 "./src/y.tab.c"
+#line 1962 "./src/y.tab.c"
     break;
 
   case 43:
-#line 255 "./src/silc.y"
+#line 253 "./src/silc.y"
     {(yyval.no) = createNode(WRITE, "", -1, (yyvsp[-2].no), NULL);}
-#line 1970 "./src/y.tab.c"
+#line 1968 "./src/y.tab.c"
     break;
 
   case 44:
-#line 258 "./src/silc.y"
+#line 256 "./src/silc.y"
     { tnode *tmp = createNode(VAR, (yyvsp[-3].name), -1, NULL, NULL);tmp->vartype = getSymbol((yyvsp[-3].name));
                                                          (yyval.no) = createNode(ASSN, "", -1, tmp, (yyvsp[-1].no));}
-#line 1977 "./src/y.tab.c"
+#line 1975 "./src/y.tab.c"
     break;
 
   case 45:
-#line 260 "./src/silc.y"
+#line 258 "./src/silc.y"
     {tnode *tmp = createNode(VAR, (yyvsp[-6].name), -1, (yyvsp[-4].no), NULL);tmp->vartype = getSymbol((yyvsp[-6].name));
                                                          (yyval.no) = createNode(ASSN, "", -1, tmp, (yyvsp[-1].no));}
-#line 1984 "./src/y.tab.c"
+#line 1982 "./src/y.tab.c"
     break;
 
   case 46:
-#line 262 "./src/silc.y"
-    {tnode *tmp = createNode(VAR, (yyvsp[-3].name), -1, NULL, NULL);tmp->vartype = getSymbol((yyvsp[-3].name));
+#line 260 "./src/silc.y"
+    { tnode *tmp = createNode(VAR, (yyvsp[-3].name), -1, NULL, NULL);tmp->vartype = getSymbol((yyvsp[-3].name));
                                                         (yyval.no) = createNode(ASSN, "", -1, tmp, (yyvsp[-1].no));}
-#line 1991 "./src/y.tab.c"
+#line 1989 "./src/y.tab.c"
     break;
 
   case 47:
-#line 267 "./src/silc.y"
+#line 265 "./src/silc.y"
     {
                                                             tnode *tmp = createNode(IF_BODY, "", -1, (yyvsp[-4].no), (yyvsp[-2].no));
                                                             (yyval.no) = createNode(IF, "", -1, (yyvsp[-7].no), tmp);
                                                         }
-#line 2000 "./src/y.tab.c"
+#line 1998 "./src/y.tab.c"
     break;
 
   case 48:
-#line 271 "./src/silc.y"
+#line 269 "./src/silc.y"
     {
                                                             tnode *tmp = createNode(IF_BODY, "", -1, (yyvsp[-2].no), NULL);
                                                             (yyval.no) = createNode(IF, "", -1, (yyvsp[-5].no), tmp);
                                                         }
-#line 2009 "./src/y.tab.c"
+#line 2007 "./src/y.tab.c"
     break;
 
   case 49:
-#line 277 "./src/silc.y"
+#line 275 "./src/silc.y"
     {(yyval.no) = createNode(BREAK, "", -1, NULL, NULL);}
-#line 2015 "./src/y.tab.c"
+#line 2013 "./src/y.tab.c"
     break;
 
   case 50:
-#line 280 "./src/silc.y"
+#line 278 "./src/silc.y"
     {(yyval.no) = createNode(CONT, "", -1, NULL, NULL);}
-#line 2021 "./src/y.tab.c"
+#line 2019 "./src/y.tab.c"
     break;
 
   case 51:
-#line 284 "./src/silc.y"
+#line 282 "./src/silc.y"
     {(yyval.no) = createNode(WHILE, "", -1, (yyvsp[-5].no), (yyvsp[-2].no));}
-#line 2027 "./src/y.tab.c"
+#line 2025 "./src/y.tab.c"
     break;
 
   case 52:
-#line 287 "./src/silc.y"
+#line 285 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2033 "./src/y.tab.c"
+#line 2031 "./src/y.tab.c"
     break;
 
   case 53:
-#line 288 "./src/silc.y"
+#line 286 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2039 "./src/y.tab.c"
+#line 2037 "./src/y.tab.c"
     break;
 
   case 54:
-#line 289 "./src/silc.y"
+#line 287 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2045 "./src/y.tab.c"
+#line 2043 "./src/y.tab.c"
     break;
 
   case 55:
-#line 290 "./src/silc.y"
+#line 288 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2051 "./src/y.tab.c"
+#line 2049 "./src/y.tab.c"
     break;
 
   case 56:
-#line 291 "./src/silc.y"
+#line 289 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2057 "./src/y.tab.c"
+#line 2055 "./src/y.tab.c"
     break;
 
   case 57:
-#line 292 "./src/silc.y"
+#line 290 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2063 "./src/y.tab.c"
+#line 2061 "./src/y.tab.c"
     break;
 
   case 58:
-#line 293 "./src/silc.y"
+#line 291 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2069 "./src/y.tab.c"
+#line 2067 "./src/y.tab.c"
     break;
 
   case 59:
-#line 294 "./src/silc.y"
+#line 292 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2075 "./src/y.tab.c"
+#line 2073 "./src/y.tab.c"
     break;
 
   case 60:
-#line 297 "./src/silc.y"
+#line 295 "./src/silc.y"
     {(yyval.no) = connect((yyvsp[-1].no), (yyvsp[0].no));}
-#line 2081 "./src/y.tab.c"
+#line 2079 "./src/y.tab.c"
     break;
 
   case 61:
-#line 298 "./src/silc.y"
+#line 296 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2087 "./src/y.tab.c"
+#line 2085 "./src/y.tab.c"
     break;
 
   case 62:
-#line 302 "./src/silc.y"
+#line 300 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2093 "./src/y.tab.c"
+#line 2091 "./src/y.tab.c"
     break;
 
   case 63:
-#line 303 "./src/silc.y"
+#line 301 "./src/silc.y"
     {(yyval.no) = NULL;}
-#line 2099 "./src/y.tab.c"
+#line 2097 "./src/y.tab.c"
     break;
 
   case 64:
-#line 306 "./src/silc.y"
+#line 304 "./src/silc.y"
     {(yyval.no) = connect((yyvsp[0].no), (yyvsp[-2].no));}
-#line 2105 "./src/y.tab.c"
+#line 2103 "./src/y.tab.c"
     break;
 
   case 65:
-#line 307 "./src/silc.y"
+#line 305 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2111 "./src/y.tab.c"
+#line 2109 "./src/y.tab.c"
     break;
 
   case 66:
-#line 309 "./src/silc.y"
+#line 307 "./src/silc.y"
     {  GSymbol* sym = (GSymbol*)searchSymbol((yyvsp[-3].name), GSymList);
                                                     if(sym== NULL) yyerror("Function is not declared");
                                                     (yyval.no) = createNode(FUNC, (yyvsp[-3].name), -1, (yyvsp[-1].no), NULL);
                                                     
                                                     (yyval.no)->vartype = sym->type;}
-#line 2121 "./src/y.tab.c"
+#line 2119 "./src/y.tab.c"
     break;
 
   case 67:
-#line 314 "./src/silc.y"
+#line 312 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2127 "./src/y.tab.c"
+#line 2125 "./src/y.tab.c"
     break;
 
   case 68:
-#line 315 "./src/silc.y"
+#line 313 "./src/silc.y"
     {(yyval.no) = (yyvsp[0].no);}
-#line 2133 "./src/y.tab.c"
+#line 2131 "./src/y.tab.c"
     break;
 
   case 69:
-#line 317 "./src/silc.y"
+#line 315 "./src/silc.y"
     { (yyval.no) = (yyvsp[-1].no);}
-#line 2139 "./src/y.tab.c"
+#line 2137 "./src/y.tab.c"
     break;
 
   case 70:
-#line 325 "./src/silc.y"
+#line 323 "./src/silc.y"
     {(yyval.name) = (yyvsp[0].name);}
-#line 2145 "./src/y.tab.c"
+#line 2143 "./src/y.tab.c"
     break;
 
   case 71:
-#line 332 "./src/silc.y"
+#line 330 "./src/silc.y"
     { (yyval.list) = (yyvsp[-1].list);}
-#line 2151 "./src/y.tab.c"
+#line 2149 "./src/y.tab.c"
     break;
 
   case 72:
-#line 333 "./src/silc.y"
+#line 331 "./src/silc.y"
     { (yyval.list) = NULL;}
-#line 2157 "./src/y.tab.c"
+#line 2155 "./src/y.tab.c"
     break;
 
   case 73:
-#line 336 "./src/silc.y"
+#line 334 "./src/silc.y"
     { (yyval.list) = connectList((yyvsp[-1].list), (yyvsp[0].list), sizeof(LSymbol));}
-#line 2163 "./src/y.tab.c"
+#line 2161 "./src/y.tab.c"
     break;
 
   case 74:
-#line 337 "./src/silc.y"
+#line 335 "./src/silc.y"
     {(yyval.list) = (yyvsp[0].list);}
-#line 2169 "./src/y.tab.c"
+#line 2167 "./src/y.tab.c"
     break;
 
   case 75:
-#line 341 "./src/silc.y"
+#line 339 "./src/silc.y"
     {   (yyval.list) = NULL;
                                                             LinkedList* gvars = (yyvsp[-1].list);
                                                             while(gvars) {
@@ -2184,47 +2182,47 @@ yyreduce:
                                                             LinkedList *copy = copyList((yyval.list), sizeof(LSymbol));
                                                             curLvar = connectList(curLvar, copy, sizeof(LSymbol));
                                                         }
-#line 2188 "./src/y.tab.c"
+#line 2186 "./src/y.tab.c"
     break;
 
   case 76:
-#line 356 "./src/silc.y"
+#line 354 "./src/silc.y"
     {(yyval.list) = addNode(strdup((yyvsp[0].name)), sizeof((yyvsp[0].name)), (yyvsp[-2].list));}
-#line 2194 "./src/y.tab.c"
+#line 2192 "./src/y.tab.c"
     break;
 
   case 77:
-#line 357 "./src/silc.y"
+#line 355 "./src/silc.y"
     {(yyval.list) = addNode(strdup((yyvsp[0].name)), sizeof((yyvsp[0].name)), NULL);}
-#line 2200 "./src/y.tab.c"
+#line 2198 "./src/y.tab.c"
     break;
 
   case 78:
-#line 365 "./src/silc.y"
+#line 363 "./src/silc.y"
     {}
-#line 2206 "./src/y.tab.c"
+#line 2204 "./src/y.tab.c"
     break;
 
   case 79:
-#line 366 "./src/silc.y"
+#line 364 "./src/silc.y"
     {}
-#line 2212 "./src/y.tab.c"
+#line 2210 "./src/y.tab.c"
     break;
 
   case 80:
-#line 369 "./src/silc.y"
+#line 367 "./src/silc.y"
     {}
-#line 2218 "./src/y.tab.c"
+#line 2216 "./src/y.tab.c"
     break;
 
   case 81:
-#line 370 "./src/silc.y"
+#line 368 "./src/silc.y"
     {}
-#line 2224 "./src/y.tab.c"
+#line 2222 "./src/y.tab.c"
     break;
 
   case 82:
-#line 374 "./src/silc.y"
+#line 372 "./src/silc.y"
     {
                                                             LinkedList* gvars = (yyvsp[-1].list);
                                                             while(gvars) {
@@ -2241,81 +2239,81 @@ yyreduce:
                                                                 curMemory+=var->size;
                                                             }
                                                         }
-#line 2245 "./src/y.tab.c"
+#line 2243 "./src/y.tab.c"
     break;
 
   case 83:
-#line 391 "./src/silc.y"
+#line 389 "./src/silc.y"
     {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=(yyvsp[0].name), .size=1};
                                                          (yyval.list) = addNode(tmp, sizeof(GVariable), (yyvsp[-2].list));
                                                         }
-#line 2254 "./src/y.tab.c"
+#line 2252 "./src/y.tab.c"
     break;
 
   case 84:
-#line 396 "./src/silc.y"
+#line 394 "./src/silc.y"
     {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=(yyvsp[-3].name), .size=(yyvsp[-1].no)->val};
                                                          (yyval.list) = addNode(tmp, sizeof(GVariable), (yyvsp[-5].list));
                                                         }
-#line 2263 "./src/y.tab.c"
+#line 2261 "./src/y.tab.c"
     break;
 
   case 85:
-#line 401 "./src/silc.y"
+#line 399 "./src/silc.y"
     {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=(yyvsp[-3].name), .params=(yyvsp[-1].no), .size=0};
                                                          (yyval.list) = addNode(tmp, sizeof(GVariable), (yyvsp[-5].list));
                                                         }
-#line 2272 "./src/y.tab.c"
+#line 2270 "./src/y.tab.c"
     break;
 
   case 86:
-#line 406 "./src/silc.y"
+#line 404 "./src/silc.y"
     {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=(yyvsp[-3].name), .size=(yyvsp[-1].no)->val};
                                                          (yyval.list) = addNode(tmp, sizeof(GVariable), NULL);
                                                         }
-#line 2281 "./src/y.tab.c"
+#line 2279 "./src/y.tab.c"
     break;
 
   case 87:
-#line 411 "./src/silc.y"
+#line 409 "./src/silc.y"
     {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=(yyvsp[0].name), .size=1};
                                                          (yyval.list) = addNode(tmp, sizeof(GVariable), NULL);
                                                         }
-#line 2290 "./src/y.tab.c"
+#line 2288 "./src/y.tab.c"
     break;
 
   case 88:
-#line 416 "./src/silc.y"
+#line 414 "./src/silc.y"
     {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=(yyvsp[-3].name), .params=(yyvsp[-1].no), .size=0};
                                                          (yyval.list) = addNode(tmp, sizeof(GVariable), NULL);
                                                         }
-#line 2299 "./src/y.tab.c"
+#line 2297 "./src/y.tab.c"
     break;
 
   case 89:
-#line 426 "./src/silc.y"
+#line 424 "./src/silc.y"
     {
                                                          fprintf(out, "%s:\n", (yyvsp[0].no)->varname);
                                                          eval_func((yyvsp[0].no), out);}
-#line 2307 "./src/y.tab.c"
+#line 2305 "./src/y.tab.c"
     break;
 
   case 90:
-#line 430 "./src/silc.y"
+#line 428 "./src/silc.y"
     {
                                                          fprintf(out, "%s:\n", (yyvsp[0].no)->varname);
                                                          eval_func((yyvsp[0].no), out);}
-#line 2315 "./src/y.tab.c"
+#line 2313 "./src/y.tab.c"
     break;
 
   case 91:
-#line 435 "./src/silc.y"
+#line 433 "./src/silc.y"
     {
                                                                     GSymbol* tmp = searchSymbol((yyvsp[-10].name), GSymList);                                                                    
                                                                     if(tmp == NULL) yyerror("Function is not declared");
@@ -2326,51 +2324,46 @@ yyreduce:
                                                                     tmp->frame = frame;
                                                                     tmp->type = searchType((yyvsp[-11].name), TypeList); 
                                                                     if((yyvsp[-2].no)->left->type == VAR) {  
-                                                                        LSymbol *sym = (LSymbol*)searchSymbol((yyvsp[-2].no)->left->varname, tmp->frame->Lvars);
-                                                                        if(sym && strcmp((yyvsp[-11].name), sym->type->name)) yyerror("Return type is not correct");
-                                                                        if(!sym) {
-                                                                            LSymbol *sym = (LSymbol*)searchSymbol((yyvsp[-2].no)->left->varname,GSymList);
-                                                                            if(sym && strcmp((yyvsp[-11].name), sym->type->name)) yyerror("Return type is not correct");
-                                                                        }
+                                                                        if(strcmp((yyvsp[-11].name), getSymbol((yyvsp[-2].no)->left->varname)->name)) yyerror("Return type is not correct");
                                                                     } else if(strcmp((yyvsp[-11].name), (yyvsp[-2].no)->left->vartype->name)) yyerror("Return type is not correct");
                                                                     (yyval.no) = createNode(FUNC, (yyvsp[-10].name), -1, connect((yyvsp[-3].no), (yyvsp[-2].no)), (yyvsp[-8].no)); (yyval.no)->vartype = searchType((yyvsp[-11].name), TypeList);
                                                                     curLvar = NULL;
                                                                     }
-#line 2340 "./src/y.tab.c"
+#line 2333 "./src/y.tab.c"
     break;
 
   case 92:
-#line 458 "./src/silc.y"
+#line 451 "./src/silc.y"
     {curLvar = addParam((yyvsp[0].no)); (yyval.no) = (yyvsp[0].no);}
-#line 2346 "./src/y.tab.c"
+#line 2339 "./src/y.tab.c"
     break;
 
   case 93:
-#line 460 "./src/silc.y"
+#line 453 "./src/silc.y"
     { (yyval.no) = connect((yyvsp[0].no), (yyvsp[-2].no));}
-#line 2352 "./src/y.tab.c"
+#line 2345 "./src/y.tab.c"
     break;
 
   case 94:
-#line 461 "./src/silc.y"
+#line 454 "./src/silc.y"
     { (yyval.no) = (yyvsp[0].no);}
-#line 2358 "./src/y.tab.c"
+#line 2351 "./src/y.tab.c"
     break;
 
   case 95:
-#line 462 "./src/silc.y"
+#line 455 "./src/silc.y"
     { (yyval.no) = NULL;}
-#line 2364 "./src/y.tab.c"
+#line 2357 "./src/y.tab.c"
     break;
 
   case 96:
-#line 465 "./src/silc.y"
+#line 458 "./src/silc.y"
     {(yyval.no) = createNode(VAR, (yyvsp[0].name), -1, NULL, NULL); (yyval.no)->vartype = searchType((yyvsp[-1].name), TypeList);}
-#line 2370 "./src/y.tab.c"
+#line 2363 "./src/y.tab.c"
     break;
 
 
-#line 2374 "./src/y.tab.c"
+#line 2367 "./src/y.tab.c"
 
       default: break;
     }
@@ -2608,7 +2601,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 470 "./src/silc.y"
+#line 463 "./src/silc.y"
 
 
 

@@ -26,17 +26,15 @@
         checkArg(sym->right, arg->right);
     }
 
-    Type* getSymbol(char *sname) {
+    Type* getSymbol(char *oname) {
+        char *sname = strdup(oname);
         char *name = strtok(sname, ".");
-        LOG("symbol", sname)
         GSymbol* sym = searchSymbol(name, curLvar);
         if (sym) {  // local variable
-            LOG("local", sym->type->name);
             Field* field = NULL;
             char *tok;
             while((tok = strtok(NULL, "."))) {
                 field = getField(tok, sym->type->fields);
-                LOG("field", tok)
                 if(!field) yyerror("Undefined field");
             }
             return field?field->type:sym->type;            
@@ -259,7 +257,7 @@ assgn : _ID _EQUALS expr _SEMI                          { tnode *tmp = createNod
                                                          $$ = createNode(ASSN, "", -1, tmp, $3);}
       | _ID '[' expr ']' _EQUALS expr _SEMI             {tnode *tmp = createNode(VAR, $1, -1, $3, NULL);tmp->vartype = getSymbol($1);
                                                          $$ = createNode(ASSN, "", -1, tmp, $6);}
-      | field _EQUALS expr _SEMI                        {tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getSymbol($1);
+      | field _EQUALS expr _SEMI                        { tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getSymbol($1);
                                                         $$ = createNode(ASSN, "", -1, tmp, $3);}
       ;
 
@@ -442,12 +440,7 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
                                                                     tmp->frame = frame;
                                                                     tmp->type = searchType($1, TypeList); 
                                                                     if($10->left->type == VAR) {  
-                                                                        LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname, tmp->frame->Lvars);
-                                                                        if(sym && strcmp($1, sym->type->name)) yyerror("Return type is not correct");
-                                                                        if(!sym) {
-                                                                            LSymbol *sym = (LSymbol*)searchSymbol($10->left->varname,GSymList);
-                                                                            if(sym && strcmp($1, sym->type->name)) yyerror("Return type is not correct");
-                                                                        }
+                                                                        if(strcmp($1, getSymbol($10->left->varname)->name)) yyerror("Return type is not correct");
                                                                     } else if(strcmp($1, $10->left->vartype->name)) yyerror("Return type is not correct");
                                                                     $$ = createNode(FUNC, $2, -1, connect($9, $10), $4); $$->vartype = searchType($1, TypeList);
                                                                     curLvar = NULL;

@@ -6,7 +6,7 @@ create the abstract symbol treee
 #include <stdio.h>
 #include <stdlib.h>
 
-
+#define DEBUG 1
 #ifdef DEBUG
 #define LOG(s1, s2) printf("DEBUG | %s : %s\n", s1, s2);
 #else

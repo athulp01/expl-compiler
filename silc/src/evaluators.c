@@ -104,6 +104,8 @@ reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
       fprintf(out, "MOV R%d, %d\n", cur, root->val);
     else if (!strcmp(root->vartype->name, "str"))
       fprintf(out, "MOV R%d, %s\n", cur, root->varname);
+    else if (!strcmp(root->vartype->name, "null"))
+      fprintf(out, "MOV R%d, 0\n", cur);
     return cur;
   } else if (root->type == VAR) {
     fprintf(out, "MOV R%d, [R%d]\n", cur, getAddress(root, frame, out));
