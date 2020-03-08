@@ -154,6 +154,8 @@ fielddef : type _ID _SEMI                                 { Field *field = (Fiel
       ;
 
 fieldlst : fieldlst fielddef                               { $2->idx = ((Field*)$1->data)->idx + 1;
+                                                             if(getField($2->name, $1))
+                                                                yyerror("Duplicate field entry");
                                                              $$ = addNode($2, sizeof(Field), $1);}
          | fielddef                                        { $1->idx = 1; $$ = addNode($1, sizeof(Field), NULL); }
          ;
@@ -172,6 +174,7 @@ typedef : _TYPE _ID '{' fieldlst '}' _ENDTYPE             { if(searchType($2, Ty
                                                                 }
                                                                 field = field->next;
                                                             }
+                                                            if(size > 7) yyerror("Size of user defined type cannot be greater than 8");
                                                             type->size = size;
                                                              TypeList = addNode(type, sizeof(Type), TypeList);
                                                            }
