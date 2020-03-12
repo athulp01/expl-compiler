@@ -37,6 +37,7 @@ enum TYPE {
   INIT,
   ALLOC,
   FFREE,
+  METHOD,
 };
 
 //Deprecated! Use Type instead.
@@ -73,11 +74,12 @@ typedef struct _Parameter {
 
 struct _GSymbol;
 struct _Type;
-
+struct _Classdef;
 //AST node
 typedef struct _tnode {
   enum TYPE type;
   struct _Type *vartype;
+  struct _ClassDef *varclass;
   char* varname;
   struct _GSymbol* symbol;    //can also refer to local symbol by type casting
   int val;
@@ -89,6 +91,7 @@ typedef struct {
   char* name;
   int size;
   tnode* params;
+  int isfunc;
 } GVariable;
 
 //For storing user and inbuilt types
@@ -98,13 +101,38 @@ typedef struct _Type {
   LinkedList *fields;
 }Type;
 
+union {
+  Type *a;
+}T;
+
+//For storing class table
+typedef struct _ClassDef {
+  char *name;
+  LinkedList *fields;
+  LinkedList *methods;
+  struct _ClassDef *parent;
+  unsigned int idx;
+  int fieldCount;
+  int methodCount;
+} ClassDef;
+
 //For storing fields of user defined types
 typedef struct _Field {
   char *name;
   int idx;
   struct _Type *type;
   char *ndef;
+  ClassDef *class;   //Only for OExpl
 }Field;
+
+typedef struct _Method {
+  char *name;
+  Type *type;
+  tnode *params;
+  int idx;
+  ClassDef *class;
+  Frame *frame;
+}Method;
 
 // Structure for storing the global symbol table
 typedef struct _GSymbol {
@@ -112,6 +140,7 @@ typedef struct _GSymbol {
   Type *type;
   int size;
   int binding;
+  ClassDef *class;
   tnode* params;
   Frame* frame;
 } GSymbol;
@@ -122,11 +151,12 @@ typedef struct _LSymbol {
   Type *type;
   int size;
   int binding;
+  ClassDef *class;
 } LSymbol;
 
 //---------------------------------------------
 
-extern LinkedList *GSymList, *LSymList, *TypeList;
+extern LinkedList *GSymList, *LSymList, *TypeList, *ClassList;
 //Last label used
 extern int label;
 
@@ -149,10 +179,14 @@ LinkedList* copyList(LinkedList*, size_t);
 //search in the symbol table
 void* searchSymbol(char*, LinkedList*);
 //search in the type table
-void* searchType(char*, LinkedList*);
+Type* searchType(char*, LinkedList*);
 //search and return field index
 int searchField(char*, LinkedList*);
+//
+Method* searchMethod(char*, LinkedList*);
 Field* getField(char*, LinkedList*);
+//Search int the class table
+ClassDef* searchClass(char*, LinkedList*);
 
 //create a label node (if time permits use generic addNode())
 LabelList* createLlistNode(int, int, LabelList*);

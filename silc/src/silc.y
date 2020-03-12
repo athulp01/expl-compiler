@@ -8,7 +8,7 @@
 	int yylex(void);
     int yyerror(char*);
     FILE *out, *yyin;
-    LinkedList *GSymList, *LSymList, *LVarList, *GVarList, *TypeList, *curLvar;
+    LinkedList *GSymList, *LSymList, *LVarList, *GVarList, *TypeList, *curLvar, *ClassList, *curClassField, *curClassMethod;
     Frame *curFrame;
     int curMemory;
 
@@ -31,11 +31,21 @@
         char *name = strtok(sname, ".");
         GSymbol* sym = searchSymbol(name, curLvar);
         if (sym) {  // local variable
+            LOG("local", name)
             Field* field = NULL;
-            char *tok;
-            while((tok = strtok(NULL, "."))) {
-                field = getField(tok, sym->type->fields);
-                if(!field) yyerror("Undefined field");
+            if(!strcmp(name, "self")) {
+                char *tok;
+                while((tok = strtok(NULL, "."))) {
+                    LOG("field", tok)
+                    field = getField(tok, curClassField);
+                    if(!field) yyerror("Undefined field");
+                } 
+            }else {
+                char *tok;
+                while((tok = strtok(NULL, "."))) {
+                    field = getField(tok, sym->type->fields);
+                    if(!field) yyerror("Undefined field");
+                }
             }
             return field?field->type:sym->type;            
         } else {
@@ -91,13 +101,13 @@
 }
 
 %type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT mainblock
-%type <no> param paramlist fdef return arg args funccall funcstmt init alloc params free
+%type <no> param paramlist fdef return arg args funccall funcstmt init alloc params free methodcall
 %type <name> _ID type field 
-%type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock fieldlst
+%type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock fieldlst methodlst classmemberlst classmember classmemberblock methoddef
 %type <field> fielddef
 
 %token _DECL _ENDDECL _INT _STR _TEXT _MAIN _RET _TYPE _ENDTYPE _NULL
-%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND _INIT _ALLOC _FREE
+%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND _INIT _ALLOC _FREE _CLASS _SELF _ENDCLASS
 %token _LT _GT _EQ _NE _LE _GE
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD 
 %token _ID _NUM
@@ -114,8 +124,8 @@
 
 /*----------------------------------------------------------Program-----------------------------------------------------------*/
 
-program : typedefblock gdeclblock fdefblock mainblock
-        | typedefblock gdeclblock mainblock
+program : typedefblock classdef gdeclblock fdefblock mainblock
+        | typedefblock classdef gdeclblock mainblock
         | gdeclblock fdefblock mainblock
         | typedefblock mainblock
         | gdeclblock mainblock
@@ -140,6 +150,94 @@ program : typedefblock gdeclblock fdefblock mainblock
 
  /*-----------------------------------------------------------------------------------------------------------------------------*/
 
+  /*--------------------------------------------------------Class defintion-----------------------------------------------------------------*/
+
+  classdef : _CLASS _ID '{' classmemberblock methodlst '}' _ENDCLASS      {ClassDef *class = (ClassDef*)malloc(sizeof(ClassDef));
+                                                                 class->name = $2;
+                                                                 class->fields = curClassField;
+                                                                 class->methods = curClassMethod;
+                                                                 LinkedList *func = $5;
+                                                                 ClassList = addNode(class, sizeof(ClassDef), ClassList);
+                                                                 tnode *tmp;
+                                                                 while(func) {
+                                                                     tmp = (tnode*)func->data;
+                                                                     char *s = malloc(sizeof($2)+sizeof(tmp->varname)+2);
+                                                                     strcpy(s, $2);
+                                                                     strcat(s, ".");
+                                                                     strcat(s, tmp->varname);
+                                                                     fprintf(out, "%s:\n",tmp->varname);
+                                                                     eval_method(tmp, curClassMethod, out);
+                                                                     func = func->next;
+                                                                 }
+                                                                 curClassMethod = NULL;
+                                                                 curClassField = NULL;
+                                                                }
+           ;
+
+  methodlst : methodlst methoddef                               {$$ = connectList($1, $2, sizeof(tnode));}
+            | methoddef                                         {$$ = $1;}
+
+  methoddef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'   {
+                                                                    Method* tmp = searchMethod($2, curClassMethod);
+                                                                    Frame *frame = (Frame*)malloc(sizeof(Frame));
+                                                                    frame->Lvars = $7;
+                                                                    tmp->frame = frame;
+                                                                    tmp->type = searchType($1, TypeList); 
+                                                                    if($10->left->type == VAR) {  
+                                                                        if(strcmp($1, getSymbol($10->left->varname)->name)) yyerror("Return type is not correct");
+                                                                    } else if(strcmp($1, $10->left->vartype->name)) yyerror("Return type is not correct");
+                                                                    LinkedList *lst = (LinkedList*)malloc(sizeof(LinkedList));
+                                                                    lst->data = createNode(METHOD, $2, -1, connect($9, $10), $4); ((tnode*)lst->data)->vartype = searchType($1, TypeList);
+                                                                    $$ = lst;
+                                                                    }                                                                  
+                                                                    
+            ;
+
+classmemberblock : _DECL classmemberlst _ENDDECL               {$$ = $2;}
+                 ;
+
+classmemberlst : classmemberlst classmember                     {$$ = connectList($1, $2, sizeof(Field));}
+                 | classmember                                      {$$ = $1;}
+
+classmember : type gvarlist _SEMI                             {
+                                                                LinkedList *fields= NULL, *methods = NULL;
+                                                                LinkedList* gvars = $2;
+                                                                while(gvars) {
+                                                                    GVariable *var = (GVariable*)(gvars->data);
+                                                                    if(var->isfunc) {
+                                                                        LOG("method decl", var->name)
+                                                                        Method* tmp = (Method*)malloc(sizeof(Method));
+                                                                        Type *type = (Type*)searchType($1, TypeList);
+                                                                        if(type==NULL) yyerror("Undefined type");
+                                                                        *tmp = (Method){.name=var->name, .type=type, .params=var->params};
+                                                                        methods = addNode(tmp, sizeof(Method), methods);
+                                                                    } else {
+                                                                        LOG("field decl", var->name)
+                                                                        Field* tmp = (Field*)malloc(sizeof(Field));
+                                                                        Type *type = (Type*)searchType($1, TypeList);
+                                                                        if(type==NULL) yyerror("Undefined type");
+                                                                        *tmp = (Field){.name=var->name, .type=type};
+                                                                        fields = addNode(tmp, sizeof(Field), fields);
+                                                                    }
+                                                                    gvars = gvars->next;
+                                                                }
+                                                                curClassMethod = connectList(curClassMethod, methods, sizeof(Method));
+                                                                curClassField = connectList(curClassField, fields, sizeof(Field));
+                                                            }
+     ;        
+
+methodcall : field '.' '(' args ')'                    {char *s = strtok($1, ".");
+                                                        char *callname = (char*)malloc(sizeof($1));
+                                                        GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
+                                                        if(sym==NULL) sym = (GSymbol*)searchSymbol(s, curLvar);
+                                                        if(sym== NULL) yyerror("Function is not declared");
+                                                        while((s=strtok($1, NULL)));
+                                                        strcat(callname, sym->class->name);
+                                                        strcat(callname, ".");
+                                                        strcat(callname, s);
+                                                        $$ = createNode(FUNC, callname, -1, $4, NULL);
+                                                        $$->vartype = sym->type;
+                                                        }
  /*--------------------------------------------------------Type defintion-----------------------------------------------------------------*/
 
  typedefblock : typedefblock typedef                      {}
@@ -315,10 +413,10 @@ args : args _COMMA arg                                  {$$ = connect($3, $1);}
 funccall : _ID '(' args ')'                      {  GSymbol* sym = (GSymbol*)searchSymbol($1, GSymList);
                                                     if(sym== NULL) yyerror("Function is not declared");
                                                     $$ = createNode(FUNC, $1, -1, $3, NULL);
-                                                    
                                                     $$->vartype = sym->type;}
          | alloc                                        {$$ = $1;}
          | init                                         {$$ = $1;}
+         | methodcall                                    {$$ = $1;}
          ;
 funcstmt : funccall _SEMI                               { $$ = $1;}
          ;
@@ -350,8 +448,9 @@ ldecl : type lvarlist _SEMI                             {   $$ = NULL;
                                                                 char *var = (char*)(gvars->data);
                                                                 LSymbol* tmp = (LSymbol*)malloc(sizeof(LSymbol));
                                                                 Type *type = (Type*)searchType($1, TypeList);
-                                                                if(type==NULL) yyerror("Undefined type");
-                                                                *tmp = (LSymbol){.name=var, .type=type, .size=1};
+                                                                ClassDef* class = searchClass($1, ClassList);
+                                                                if(type==NULL && class==NULL) yyerror("Undefined type");
+                                                                *tmp = (LSymbol){.name=var, .type=type,.class=class, .size=1};
                                                                 $$ = addNode(tmp, sizeof(LSymbol), $$);
                                                                 gvars = gvars->next;
                                                             }
@@ -386,8 +485,10 @@ gdecl : type gvarlist _SEMI                             {
                                                                 }
                                                                 GSymbol* tmp = (GSymbol*)malloc(sizeof(GSymbol));
                                                                 Type *type = (Type*)searchType($1, TypeList);
-                                                                if(type==NULL) yyerror("Undefined type");
-                                                                *tmp = (GSymbol){.name=var->name, .type=type, .size=var->size, .params=var->params, .binding=curMemory};
+                                                                ClassDef* class = searchClass($1, ClassList);
+                                                                if(type==NULL && class==NULL)
+                                                                    yyerror("Undefined type");
+                                                                *tmp = (GSymbol){.name=var->name, .type=type, .class=class, .size=var->size, .params=var->params, .binding=curMemory};
                                                                 GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
                                                                 gvars = gvars->next;
                                                                 curMemory+=var->size;
@@ -420,7 +521,7 @@ gvarlist : gvarlist _COMMA _ID                          {GVariable* tmp = (GVari
                                                         }
 
         | _ID '(' paramlist ')'                         {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
-                                                         *tmp = (GVariable){.name=$1, .params=$3, .size=0};
+                                                         *tmp = (GVariable){.name=$1, .params=$3, .size=0, .isfunc=1};
                                                          $$ = addNode(tmp, sizeof(GVariable), NULL);
                                                         }
         ;
@@ -456,7 +557,12 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
                                                                     
             ;
 
-paramlist : params                                      {curLvar = addParam($1); $$ = $1;}
+paramlist : params                                      {curLvar = addParam($1); $$ = $1; 
+                                                        LSymbol* tmp = malloc(sizeof(LSymbol));
+                                                        Type *type = malloc(sizeof(LSymbol));;
+                                                        *type = (Type){.fields=curClassField};
+                                                        *tmp = (LSymbol){.name = "self", .type=type };
+                                                        curLvar = addNode(tmp, sizeof(LSymbol), curLvar);}
           ;
 params : params _COMMA param                            { $$ = connect($3, $1);}
           | param                                       { $$ = $1;}

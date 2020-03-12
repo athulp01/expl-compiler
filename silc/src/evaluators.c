@@ -14,7 +14,7 @@ LinkedList* GSymList;
 reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
     int binding;
     char *name = strtok(root->varname, ".");
-    LSymbol* sym = searchSymbol(name, frame->Lvars);
+    GSymbol* sym = searchSymbol(name, frame->Lvars);
     if (sym) {  // local variable
       binding = sym->binding;
       reg_index mem = getReg(frame);
@@ -23,7 +23,7 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
       int idx = 0;
       char *tok;
       while((tok = strtok(NULL, "."))) {
-        idx = searchField(tok, sym->type->fields);
+        idx = searchField(tok, sym->type?sym->type->fields:sym->class->fields);
         fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
       }
       freeReg(frame);
@@ -43,7 +43,7 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
           freeReg(frame);
         }else {
           while((tok = strtok(NULL, "."))) {
-            idx += searchField(tok, sym->type->fields);
+            idx += searchField(tok, sym->type?sym->type->fields:sym->class->fields);
             fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
           }
         }
@@ -263,6 +263,27 @@ reg_index call_func(tnode* root, Frame* frame, FILE* out) {
   return tmp;
 }
 
+reg_index call_method(tnode* root, Frame* frame, FILE* out) {
+  reg_index self = getAddress(root, frame, out);
+  int reg = pushRegToStack(frame, out);
+  fprintf(out, "PUSH R%d\n", self); //Push self pointer as an argument
+  freeReg(frame);
+  pushArgToStack(root->left, frame, out);
+  reg_index tmp = getReg(frame);
+  fprintf(out, "PUSH R%d\n", tmp);
+  freeReg(frame);
+  fprintf(out, "CALL %s\n", root->varname);
+  tmp = getReg(frame);
+  fprintf(out, "POP R%d\n", tmp);
+  popArgFromStack(root->left, frame, out);
+  reg_index val = getReg(frame);
+  fprintf(out, "PUSH R%d\n", val);
+  freeReg(frame);
+  //Only pop if pushed
+  if(reg) getRegFromStack(frame, out);
+  return tmp;
+}
+
 void eval_func(tnode* root, FILE* out) {
   // create a frame for the function
   GSymbol* sym = (GSymbol*)searchSymbol(root->varname, GSymList);
@@ -283,6 +304,32 @@ void eval_func(tnode* root, FILE* out) {
   }
   freeReg(frame);
   addArgSymbol(root->right, frame, -3, out);
+  eval_tree(root->left, frame, out);
+}
+
+void eval_method(tnode* root, LinkedList *methods, FILE* out) {
+  // create a frame for the function
+  Method* method = searchMethod(root->varname, methods);
+  Frame* frame = (Frame*)malloc(sizeof(Frame));
+  frame->Lvars = copyList(method->frame->Lvars, sizeof(LSymbol));
+
+  /* PUSH the current base pointer and set it as the current stack pointer */
+  fprintf(out, "PUSH BP\nMOV BP, SP\n");
+  // create a space for local variables in the stack and set the binding
+  LinkedList* list = frame->Lvars;
+  int count = 1;
+  reg_index tmp = getReg(frame);
+  while (list) {
+    ((LSymbol*)list->data)->binding = count++;
+    list = list->next;
+    fprintf(out, "PUSH R%d\n",
+            tmp);  // push a free space for the variable
+  }
+  freeReg(frame);
+  LSymbol *var = (LSymbol*)malloc(sizeof(LSymbol));
+  *var = (LSymbol){.name="self", .type=searchType("void", TypeList), .size=1, .binding=-3};
+  frame->Lvars = addNode(var, sizeof(LSymbol), frame->Lvars);
+  addArgSymbol(root->right, frame, -4, out);
   eval_tree(root->left, frame, out);
 }
 // Do a inorder traversal and set the binding of the function arguments

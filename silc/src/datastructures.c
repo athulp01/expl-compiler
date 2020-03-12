@@ -8,7 +8,7 @@
 int yyerror(char*);
 int label = 0;
 
-void* searchType(char *s, LinkedList *front) {
+Type* searchType(char *s, LinkedList *front) {
   while(front) {
     Type* type = (Type*)front->data;
     if(!strcmp(type->name, s)) return type;
@@ -26,9 +26,29 @@ int searchField(char *s, LinkedList *front) {
   return 0;
 }
 
+ClassDef* searchClass(char *s, LinkedList *front) {
+  while(front) {
+    ClassDef* class = (ClassDef*)front->data;
+    if(!strcmp(class->name, s)) return class;
+    front = front->next;
+  }
+  return 0;
+}
+
+Method* searchMethod(char *s, LinkedList *front) {
+  while(front) {
+    Method* method = (Method*)front->data;
+    LOG("query", s)
+    LOG("methods", method->name)
+    if(!strcmp(method->name, s)) return method;
+    front = front->next;
+  }
+  return 0;
+}
 Field* getField(char *s, LinkedList *front) {
   while(front) {
     Field* field = (Field*)front->data;
+    LOG("fields", field->name)
     if(!strcmp(field->name, s)) return field;
     front = front->next;
   }

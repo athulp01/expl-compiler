@@ -72,27 +72,30 @@ extern int yydebug;
     _INIT = 278,
     _ALLOC = 279,
     _FREE = 280,
-    _LT = 281,
-    _GT = 282,
-    _EQ = 283,
-    _NE = 284,
-    _LE = 285,
-    _GE = 286,
-    _PLUS = 287,
-    _MINUS = 288,
-    _MUL = 289,
-    _DIV = 290,
-    _END = 291,
-    _BEGIN = 292,
-    _READ = 293,
-    _WRITE = 294,
-    _SEMI = 295,
-    _EQUALS = 296,
-    _Q = 297,
-    _COMMA = 298,
-    _MOD = 299,
-    _ID = 300,
-    _NUM = 301
+    _CLASS = 281,
+    _SELF = 282,
+    _ENDCLASS = 283,
+    _LT = 284,
+    _GT = 285,
+    _EQ = 286,
+    _NE = 287,
+    _LE = 288,
+    _GE = 289,
+    _PLUS = 290,
+    _MINUS = 291,
+    _MUL = 292,
+    _DIV = 293,
+    _END = 294,
+    _BEGIN = 295,
+    _READ = 296,
+    _WRITE = 297,
+    _SEMI = 298,
+    _EQUALS = 299,
+    _Q = 300,
+    _COMMA = 301,
+    _MOD = 302,
+    _ID = 303,
+    _NUM = 304
   };
 #endif
 /* Tokens.  */
@@ -119,33 +122,36 @@ extern int yydebug;
 #define _INIT 278
 #define _ALLOC 279
 #define _FREE 280
-#define _LT 281
-#define _GT 282
-#define _EQ 283
-#define _NE 284
-#define _LE 285
-#define _GE 286
-#define _PLUS 287
-#define _MINUS 288
-#define _MUL 289
-#define _DIV 290
-#define _END 291
-#define _BEGIN 292
-#define _READ 293
-#define _WRITE 294
-#define _SEMI 295
-#define _EQUALS 296
-#define _Q 297
-#define _COMMA 298
-#define _MOD 299
-#define _ID 300
-#define _NUM 301
+#define _CLASS 281
+#define _SELF 282
+#define _ENDCLASS 283
+#define _LT 284
+#define _GT 285
+#define _EQ 286
+#define _NE 287
+#define _LE 288
+#define _GE 289
+#define _PLUS 290
+#define _MINUS 291
+#define _MUL 292
+#define _DIV 293
+#define _END 294
+#define _BEGIN 295
+#define _READ 296
+#define _WRITE 297
+#define _SEMI 298
+#define _EQUALS 299
+#define _Q 300
+#define _COMMA 301
+#define _MOD 302
+#define _ID 303
+#define _NUM 304
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 84 "./src/silc.y"
+#line 94 "./src/silc.y"
 
 	tnode *no;
     char *name;
@@ -154,7 +160,7 @@ union YYSTYPE
     Field* field;
 	
 
-#line 158 "./include/silc.h"
+#line 164 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
