@@ -156,7 +156,7 @@ typedef struct _LSymbol {
 
 //---------------------------------------------
 
-extern LinkedList *GSymList, *LSymList, *TypeList, *ClassList;
+extern LinkedList *GSymList, *LSymList, *TypeList, *ClassList, *curClassField, *curClassMethod;
 //Last label used
 extern int label;
 

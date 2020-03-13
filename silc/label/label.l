@@ -3,7 +3,7 @@
 	#include <stdio.h>
     #include <string.h>
 
-    #define LABEL_LENGTH 10
+    #define LABEL_LENGTH 50
 
     int curMem = 2054, pass = 1;
     FILE *translated;
@@ -23,10 +23,10 @@
     }
 %}
 
-label [a-zA-Z0-9]+[:](\n)
-branch1 ("JZ"|"JNZ")[' ']+[R][0-9]+[,][' ']*[a-zA-Z0-9]+
-branch2 ("JMP")[' ']+[a-zA-Z0-9]+
-branch3 ("CALL")[' '][a-zA-Z]+
+label [a-zA-Z0-9.]+[:](\n)
+branch1 ("JZ"|"JNZ")[' ']+[R][0-9]+[,][' ']*[a-zA-Z0-9.]+
+branch2 ("JMP")[' ']+[a-zA-Z0-9.]+
+branch3 ("CALL")[' '][a-zA-Z.]+
 start ("START")
 
 %%

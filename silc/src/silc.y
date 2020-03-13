@@ -10,7 +10,7 @@
     FILE *out, *yyin;
     LinkedList *GSymList, *LSymList, *LVarList, *GVarList, *TypeList, *curLvar, *ClassList, *curClassField, *curClassMethod;
     Frame *curFrame;
-    int curMemory;
+    int curMemory, curClassFieldMem;
 
     void checkArg(tnode* sym, tnode* arg) {
         if(sym == NULL) {
@@ -26,7 +26,47 @@
         checkArg(sym->right, arg->right);
     }
 
-    Type* getSymbol(char *oname) {
+    Type* getTypeOfSymbol(char *oname) {
+        char *sname = strdup(oname);
+        char *name = strtok(sname, ".");
+        GSymbol* sym = searchSymbol(name, curLvar);
+        if (sym) {  // if it is a local variable
+            LOG("local", name)
+            Field* field = NULL;
+            if(!strcmp(name, "self")) { // search in the fields of current class if begin with "self"
+                char *tok;
+                while((tok = strtok(NULL, "."))) {
+                    LOG("field", tok)
+                    field = getField(tok, curClassField);
+                    if(!field) yyerror("Undefined field");
+                } 
+            }else {
+                char *tok;
+                while((tok = strtok(NULL, "."))) {
+                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
+                    if(!field) yyerror("Undefined field");
+                }
+            }
+            return field?field->type:sym->type;            
+        } else {
+            sym = searchSymbol(name, GSymList);
+            if (sym) {  // global variable
+                Field* field = NULL;
+                char *tok;
+                while((tok = strtok(NULL, "."))) {
+                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
+                    if(!field) yyerror("Undefined field");
+                }
+                return field?field->type:sym->type; 
+            } else {
+                printf("%s", sname);
+                yyerror("Undefined variable");
+                return NULL;
+            }
+        } 
+    }
+
+    ClassDef* getClassOfSymbol(char *oname) {
         char *sname = strdup(oname);
         char *name = strtok(sname, ".");
         GSymbol* sym = searchSymbol(name, curLvar);
@@ -43,21 +83,21 @@
             }else {
                 char *tok;
                 while((tok = strtok(NULL, "."))) {
-                    field = getField(tok, sym->type->fields);
+                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
                     if(!field) yyerror("Undefined field");
                 }
             }
-            return field?field->type:sym->type;            
+            return field?field->class:sym->class;            
         } else {
             sym = searchSymbol(name, GSymList);
             if (sym) {  // global variable
                 Field* field = NULL;
                 char *tok;
                 while((tok = strtok(NULL, "."))) {
-                    field = getField(tok, sym->type->fields);
+                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
                     if(!field) yyerror("Undefined field");
                 }
-                return field?field->type:sym->type; 
+                return field?field->class:sym->class; 
             } else {
                 printf("%s", sname);
                 yyerror("Undefined variable");
@@ -165,7 +205,7 @@ program : typedefblock classdef gdeclblock fdefblock mainblock
                                                                      strcpy(s, $2);
                                                                      strcat(s, ".");
                                                                      strcat(s, tmp->varname);
-                                                                     fprintf(out, "%s:\n",tmp->varname);
+                                                                     fprintf(out, "%s:\n",s);
                                                                      eval_method(tmp, curClassMethod, out);
                                                                      func = func->next;
                                                                  }
@@ -184,7 +224,7 @@ program : typedefblock classdef gdeclblock fdefblock mainblock
                                                                     tmp->frame = frame;
                                                                     tmp->type = searchType($1, TypeList); 
                                                                     if($10->left->type == VAR) {  
-                                                                        if(strcmp($1, getSymbol($10->left->varname)->name)) yyerror("Return type is not correct");
+                                                                        if(strcmp($1, getTypeOfSymbol($10->left->varname)->name)) yyerror("Return type is not correct");
                                                                     } else if(strcmp($1, $10->left->vartype->name)) yyerror("Return type is not correct");
                                                                     LinkedList *lst = (LinkedList*)malloc(sizeof(LinkedList));
                                                                     lst->data = createNode(METHOD, $2, -1, connect($9, $10), $4); ((tnode*)lst->data)->vartype = searchType($1, TypeList);
@@ -216,7 +256,7 @@ classmember : type gvarlist _SEMI                             {
                                                                         Field* tmp = (Field*)malloc(sizeof(Field));
                                                                         Type *type = (Type*)searchType($1, TypeList);
                                                                         if(type==NULL) yyerror("Undefined type");
-                                                                        *tmp = (Field){.name=var->name, .type=type};
+                                                                        *tmp = (Field){.name=var->name, .type=type, .idx = curClassFieldMem++};
                                                                         fields = addNode(tmp, sizeof(Field), fields);
                                                                     }
                                                                     gvars = gvars->next;
@@ -226,18 +266,16 @@ classmember : type gvarlist _SEMI                             {
                                                             }
      ;        
 
-methodcall : field '.' '(' args ')'                    {char *s = strtok($1, ".");
-                                                        char *callname = (char*)malloc(sizeof($1));
+methodcall : field  '(' args ')'                    {   char *dup = strdup($1);
+                                                        LOG("methodname", dup)char *s = strtok(dup, ".");
                                                         GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
                                                         if(sym==NULL) sym = (GSymbol*)searchSymbol(s, curLvar);
                                                         if(sym== NULL) yyerror("Function is not declared");
-                                                        while((s=strtok($1, NULL)));
-                                                        strcat(callname, sym->class->name);
-                                                        strcat(callname, ".");
-                                                        strcat(callname, s);
-                                                        $$ = createNode(FUNC, callname, -1, $4, NULL);
-                                                        $$->vartype = sym->type;
+                                                        s=strtok(NULL, ".");
+                                                        $$ = createNode(METHOD, $1, -1, $3, NULL);
+                                                        $$->vartype = searchMethod(s, sym->class->methods)->type;
                                                         }
+            ;
  /*--------------------------------------------------------Type defintion-----------------------------------------------------------------*/
 
  typedefblock : typedefblock typedef                      {}
@@ -325,11 +363,11 @@ expr : expr _PLUS expr		                            {$$ = createNode(OP, "+", -1
 
 	 | '(' expr ')'		                                {$$ = $2;}
 	 | _NUM			                                    {$$ = $1; $$->vartype = searchType("int", TypeList);}
-     | _ID                                              {$$ = createNode(VAR, $1, -1, NULL, NULL); $$->vartype = getSymbol($1);}
-     | _ID '[' expr ']'                                 {$$ = createNode(VAR, $1, -1, $3, NULL);$$->vartype = getSymbol($1);}
+     | _ID                                              {$$ = createNode(VAR, $1, -1, NULL, NULL); $$->vartype = getTypeOfSymbol($1); $$->varclass = getClassOfSymbol($1);}
+     | _ID '[' expr ']'                                 {$$ = createNode(VAR, $1, -1, $3, NULL);$$->vartype = getTypeOfSymbol($1);}
      | _TEXT                                            {$$ = $1; $$->vartype = searchType("str", TypeList);}
      | funccall                                         {$$ = $1;}
-     | field                                            {$$ = createNode(VAR, $1, -1, NULL, NULL);$$->vartype = getSymbol($1);}
+     | field                                            {$$ = createNode(VAR, $1, -1, NULL, NULL);$$->vartype = getTypeOfSymbol($1); $$->varclass = getClassOfSymbol($1);}
      | _NULL                                            {$$ = createNode(CONST, "\0", 0, NULL, NULL); $$->vartype = searchType("null", TypeList);} 
 	 ;
 
@@ -337,11 +375,11 @@ return : _RET expr _SEMI                                {$$ = createNode(RET, "\
         ;
 
 
-read : _READ '(' _ID ')' _SEMI                          {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getSymbol($3);
+read : _READ '(' _ID ')' _SEMI                          {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getTypeOfSymbol($3);
                                                         $$ = createNode(READ, "", -1, tmp, NULL);}
-     | _READ '(' _ID '[' expr ']' ')' _SEMI             {tnode *tmp = createNode(VAR, $3, -1, $5, NULL);tmp->vartype = getSymbol($3);
+     | _READ '(' _ID '[' expr ']' ')' _SEMI             {tnode *tmp = createNode(VAR, $3, -1, $5, NULL);tmp->vartype = getTypeOfSymbol($3);
                                                         $$ = createNode(READ, "", -1, tmp, NULL);}
-     | _READ '(' field ')' _SEMI                        {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getSymbol($3);
+     | _READ '(' field ')' _SEMI                        {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getTypeOfSymbol($3);
                                                         $$ = createNode(READ, "", -1, tmp, NULL);}
      ;
      
@@ -351,18 +389,18 @@ init : _INIT '(' ')'                                      {$$ = createNode(INIT,
 alloc : _ALLOC '(' ')'                                 {$$ = createNode(ALLOC, "", -1, NULL, NULL); $$->vartype = searchType("int", TypeList);}
       ;
 
-free : _FREE '(' _ID ')' _SEMI                          {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getSymbol($3);
+free : _FREE '(' _ID ')' _SEMI                          {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getTypeOfSymbol($3);tmp->varclass = getClassOfSymbol($3);
                                                         $$ = createNode(FFREE, "", -1, tmp, NULL);}
      ;
 
 write : _WRITE '(' expr ')' _SEMI                       {$$ = createNode(WRITE, "", -1, $3, NULL);}
       ;
 
-assgn : _ID _EQUALS expr _SEMI                          { tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getSymbol($1);
+assgn : _ID _EQUALS expr _SEMI                          { tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getTypeOfSymbol($1); tmp->varclass = getClassOfSymbol($1);
                                                          $$ = createNode(ASSN, "", -1, tmp, $3);}
-      | _ID '[' expr ']' _EQUALS expr _SEMI             {tnode *tmp = createNode(VAR, $1, -1, $3, NULL);tmp->vartype = getSymbol($1);
+      | _ID '[' expr ']' _EQUALS expr _SEMI             {tnode *tmp = createNode(VAR, $1, -1, $3, NULL);tmp->vartype = getTypeOfSymbol($1); tmp->varclass = getClassOfSymbol($1);
                                                          $$ = createNode(ASSN, "", -1, tmp, $6);}
-      | field _EQUALS expr _SEMI                        { tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getSymbol($1);
+      | field _EQUALS expr _SEMI                        { tnode *tmp = createNode(VAR, $1, -1, NULL, NULL);tmp->vartype = getTypeOfSymbol($1); tmp->varclass = getClassOfSymbol($1);
                                                         $$ = createNode(ASSN, "", -1, tmp, $3);}
       ;
 
@@ -549,7 +587,7 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
                                                                     tmp->frame = frame;
                                                                     tmp->type = searchType($1, TypeList); 
                                                                     if($10->left->type == VAR) {  
-                                                                        if(strcmp($1, getSymbol($10->left->varname)->name)) yyerror("Return type is not correct");
+                                                                        if(strcmp($1, getTypeOfSymbol($10->left->varname)->name)) yyerror("Return type is not correct");
                                                                     } else if(strcmp($1, $10->left->vartype->name)) yyerror("Return type is not correct");
                                                                     $$ = createNode(FUNC, $2, -1, connect($9, $10), $4); $$->vartype = searchType($1, TypeList);
                                                                     curLvar = NULL;
@@ -586,6 +624,7 @@ int main(int argc, char **argv) {
         exit(1);
     }
     curMemory = 4096;
+    curClassFieldMem = 1;
     GSymList = NULL;
     LSymList = NULL;
     LVarList = NULL;

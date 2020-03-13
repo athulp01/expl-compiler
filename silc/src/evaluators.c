@@ -22,9 +22,16 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
       fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", mem, mem, binding);
       int idx = 0;
       char *tok;
-      while((tok = strtok(NULL, "."))) {
-        idx = searchField(tok, sym->type?sym->type->fields:sym->class->fields);
-        fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
+      if(!strcmp(name, "self")) {
+        while((tok = strtok(NULL, "."))) {
+          idx = searchField(tok, curClassField);
+          fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
+        }
+      }else {
+        while((tok = strtok(NULL, "."))) {
+          idx = searchField(tok, sym->type?sym->type->fields:sym->class->fields);
+          fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
+        }
       }
       freeReg(frame);
       return mem;
@@ -37,7 +44,7 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
         int idx = 0;
         char *tok;
         fprintf(out, "MOV R%d, %d\n", mem, binding);
-        if (root->left) {
+        if (root->type == VAR && root->left) {
           fprintf(out, "ADD R%d, R%d\n", mem,
                   eval_expr(root->left, frame, out));
           freeReg(frame);
@@ -59,7 +66,7 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
 void eval_tree(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
     return;
-  eval_tree(root->left, frame, out);
+  if(root->type == CONN) eval_tree(root->left, frame, out);
   switch (root->type) {
     case FFREE:
       eval_free(root ,frame, out);
@@ -91,6 +98,9 @@ void eval_tree(tnode* root, Frame* frame, FILE* out) {
     case FUNC:
       call_func(root, frame, out);
       freeReg(frame);
+      break;
+    case METHOD:
+      call_method(root, frame, out);
   }
   eval_tree(root->right, frame, out);
   return;
@@ -120,6 +130,8 @@ reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
     eval_init(frame, out);
     fprintf(out, "MOV R%d, 0\n", cur);
     return cur;
+  } else if(root->type == METHOD) {
+    return call_method(root, frame, out);
   }
   freeReg(frame);
 
@@ -192,9 +204,10 @@ void eval_read(tnode* root, Frame* frame, FILE* out) {
 
 void eval_assgn(tnode* root, Frame* frame, FILE* out) {
   LSymbol* sym = (LSymbol*)searchSymbol(root->left->varname, frame->Lvars);
+  if(!sym) sym = (LSymbol*)searchSymbol(root->left->varname, GSymList);
   reg_index binding = getAddress(root->left, frame, out), right;
   if(root->right->type == ALLOC) {
-    right = eval_alloc(sym->type->size, frame, out);
+    right = eval_alloc(4, frame, out);
   } else right = eval_expr(root->right, frame, out);
   fprintf(out, "MOV [R%d], R%d\n", binding, right);
   freeReg(frame);
@@ -264,20 +277,29 @@ reg_index call_func(tnode* root, Frame* frame, FILE* out) {
 }
 
 reg_index call_method(tnode* root, Frame* frame, FILE* out) {
-  reg_index self = getAddress(root, frame, out);
+  char *dup = strdup(root->varname);
+  LOG("Calling",root->varname)
+  char *s = strtok(dup, ".");
+  GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
+  s = strtok(NULL, ".");
+  char *callname = (char*)malloc(sizeof(sym->class->name) + 2 + sizeof(s));
+  strcat(callname, sym->class->name);
+  strcat(callname, ".");
+  strcat(callname, s);
   int reg = pushRegToStack(frame, out);
+  pushArgToStack(root->left, frame, out);
+  reg_index self = getAddress(root, frame, out);
   fprintf(out, "PUSH R%d\n", self); //Push self pointer as an argument
   freeReg(frame);
-  pushArgToStack(root->left, frame, out);
   reg_index tmp = getReg(frame);
   fprintf(out, "PUSH R%d\n", tmp);
   freeReg(frame);
-  fprintf(out, "CALL %s\n", root->varname);
+  fprintf(out, "CALL %s\n", callname);
   tmp = getReg(frame);
   fprintf(out, "POP R%d\n", tmp);
   popArgFromStack(root->left, frame, out);
   reg_index val = getReg(frame);
-  fprintf(out, "PUSH R%d\n", val);
+  fprintf(out, "POP R%d\n", val);
   freeReg(frame);
   //Only pop if pushed
   if(reg) getRegFromStack(frame, out);

@@ -151,7 +151,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 94 "./src/silc.y"
+#line 134 "./src/silc.y"
 
 	tnode *no;
     char *name;

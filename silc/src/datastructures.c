@@ -18,9 +18,13 @@ Type* searchType(char *s, LinkedList *front) {
 }
 
 int searchField(char *s, LinkedList *front) {
+  LOG("Fieldquery", s)
   while(front) {
     Field* field = (Field*)front->data;
-    if(!strcmp(field->name, s)) return field->idx;
+    if(!strcmp(field->name, s)) {
+      printf("%d\n",field->idx );
+      return field->idx;
+    }
     front = front->next;
   }
   return 0;
@@ -36,9 +40,9 @@ ClassDef* searchClass(char *s, LinkedList *front) {
 }
 
 Method* searchMethod(char *s, LinkedList *front) {
+  LOG("query", s)
   while(front) {
     Method* method = (Method*)front->data;
-    LOG("query", s)
     LOG("methods", method->name)
     if(!strcmp(method->name, s)) return method;
     front = front->next;
@@ -46,6 +50,7 @@ Method* searchMethod(char *s, LinkedList *front) {
   return 0;
 }
 Field* getField(char *s, LinkedList *front) {
+  LOG("query", s)
   while(front) {
     Field* field = (Field*)front->data;
     LOG("fields", field->name)
@@ -65,25 +70,25 @@ tnode* createNode(enum TYPE type, char* s, int n, tnode* l,
   switch (type)
   {
   case FFREE:
-          if(!strcmp(l->vartype->name, "int") || !strcmp(l->vartype->name, "str"))
+          if(!strcmp(l->vartype?l->vartype->name:l->varclass->name, "int") || !strcmp(l->vartype?l->vartype->name:l->varclass->name, "str"))
           yyerror("Only for user defined types can be freed");
       break;
   case ASSN:
   case OP:
     if(r->type == ALLOC) {
-      if(!strcmp(l->vartype->name, "int") || !strcmp(l->vartype->name, "str"))
+      if(!strcmp(l->vartype?l->vartype->name:l->varclass->name, "int") || !strcmp(l->vartype?l->vartype->name:l->varclass->name, "str"))
           yyerror("Dynamic allocation is possible only for user defined types");
       break;
     }
-    if(!strcmp(r->vartype->name, "null")) {
-      if(!strcmp(l->vartype->name, "int") || !strcmp(l->vartype->name, "str"))
+    if(!strcmp(r->vartype?r->vartype->name:r->varclass->name, "null")) {
+      if(!strcmp(l->vartype?l->vartype->name:l->varclass->name, "int") || !strcmp(l->vartype?l->vartype->name:l->varclass->name, "str"))
         yyerror("Null can be only assigned to user defined type");
-    }else if(strcmp(l->vartype->name, r->vartype->name))
+    }else if(strcmp(l->vartype?l->vartype->name:l->varclass->name, r->vartype?r->vartype->name:r->varclass->name))
       yyerror("Type mismatch");
     break;
   case WRITE:
   case READ:
-    if(strcmp(l->vartype->name, "int") && !strcmp(l->vartype->name, "str"))
+    if(strcmp(l->vartype?l->vartype->name:l->varclass->name, "int") && !strcmp(l->vartype?l->vartype->name:l->varclass->name, "str"))
       yyerror("Type mismatch");
     break;
   }
