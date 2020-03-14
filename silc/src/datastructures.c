@@ -18,7 +18,6 @@ Type* searchType(char *s, LinkedList *front) {
 }
 
 int searchField(char *s, LinkedList *front) {
-  LOG("Fieldquery", s)
   while(front) {
     Field* field = (Field*)front->data;
     if(!strcmp(field->name, s)) {
@@ -40,20 +39,16 @@ ClassDef* searchClass(char *s, LinkedList *front) {
 }
 
 Method* searchMethod(char *s, LinkedList *front) {
-  LOG("query", s)
   while(front) {
     Method* method = (Method*)front->data;
-    LOG("methods", method->name)
     if(!strcmp(method->name, s)) return method;
     front = front->next;
   }
   return 0;
 }
 Field* getField(char *s, LinkedList *front) {
-  LOG("query", s)
   while(front) {
     Field* field = (Field*)front->data;
-    LOG("fields", field->name)
     if(!strcmp(field->name, s)) return field;
     front = front->next;
   }

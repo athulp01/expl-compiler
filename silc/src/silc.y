@@ -31,19 +31,22 @@
         char *name = strtok(sname, ".");
         GSymbol* sym = searchSymbol(name, curLvar);
         if (sym) {  // if it is a local variable
-            LOG("local", name)
             Field* field = NULL;
             if(!strcmp(name, "self")) { // search in the fields of current class if begin with "self"
                 char *tok;
+                LinkedList *lst = curClassField;
                 while((tok = strtok(NULL, "."))) {
                     LOG("field", tok)
-                    field = getField(tok, curClassField);
+                    field = getField(tok, lst);
+                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
                 } 
             }else {
                 char *tok;
+                LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
-                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
+                    field = getField(tok, lst);
+                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
                 }
             }
@@ -53,8 +56,10 @@
             if (sym) {  // global variable
                 Field* field = NULL;
                 char *tok;
+                LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
-                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
+                    field = getField(tok, lst);
+                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
                 }
                 return field?field->type:sym->type; 
@@ -71,19 +76,21 @@
         char *name = strtok(sname, ".");
         GSymbol* sym = searchSymbol(name, curLvar);
         if (sym) {  // local variable
-            LOG("local", name)
             Field* field = NULL;
             if(!strcmp(name, "self")) {
                 char *tok;
+                LinkedList *lst = curClassField;
                 while((tok = strtok(NULL, "."))) {
-                    LOG("field", tok)
-                    field = getField(tok, curClassField);
+                    field = getField(tok, lst);
+                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
                 } 
             }else {
                 char *tok;
+                LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
-                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
+                    field = getField(tok, lst);
+                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
                 }
             }
@@ -93,8 +100,10 @@
             if (sym) {  // global variable
                 Field* field = NULL;
                 char *tok;
+                LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
-                    field = getField(tok, sym->type?sym->type->fields:sym->class->fields);
+                    field = getField(tok, lst);
+                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
                 }
                 return field?field->class:sym->class; 

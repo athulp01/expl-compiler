@@ -14,6 +14,7 @@ LinkedList* GSymList;
 reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
     int binding;
     char *name = strtok(root->varname, ".");
+    Field *field;
     GSymbol* sym = searchSymbol(name, frame->Lvars);
     if (sym) {  // local variable
       binding = sym->binding;
@@ -23,13 +24,19 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
       int idx = 0;
       char *tok;
       if(!strcmp(name, "self")) {
+        LinkedList *lst = curClassField; 
         while((tok = strtok(NULL, "."))) {
-          idx = searchField(tok, curClassField);
+          idx = searchField(tok, lst);
+          field = getField(tok, lst);
+          if(field) lst = field->type->fields;
           fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
         }
       }else {
+        LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
         while((tok = strtok(NULL, "."))) {
-          idx = searchField(tok, sym->type?sym->type->fields:sym->class->fields);
+          idx = searchField(tok, lst);
+          field = getField(tok, lst);
+          if(field) lst = field->type->fields;
           fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
         }
       }
@@ -49,8 +56,11 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
                   eval_expr(root->left, frame, out));
           freeReg(frame);
         }else {
+          LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
           while((tok = strtok(NULL, "."))) {
-            idx += searchField(tok, sym->type?sym->type->fields:sym->class->fields);
+            idx = searchField(tok, lst);
+            field = getField(tok, lst);
+            if(field) lst = field->type->fields;
             fprintf(out,"MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,mem, tmp, mem, idx);
           }
         }
@@ -278,7 +288,6 @@ reg_index call_func(tnode* root, Frame* frame, FILE* out) {
 
 reg_index call_method(tnode* root, Frame* frame, FILE* out) {
   char *dup = strdup(root->varname);
-  LOG("Calling",root->varname)
   char *s = strtok(dup, ".");
   GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
   s = strtok(NULL, ".");
