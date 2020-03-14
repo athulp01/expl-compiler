@@ -21,6 +21,7 @@ void eval_break(FILE*);
 void eval_cont(FILE*);
 void eval_func(tnode* root, FILE* out);
 reg_index eval_alloc(int, Frame*, FILE*);
+reg_index eval_new(tnode*, Frame*, FILE*);
 void eval_init(Frame*, FILE*);
 reg_index call_func(tnode* root, Frame *frame, FILE *out);
 void popArgFromStack(tnode *root, Frame*, FILE *out) ;

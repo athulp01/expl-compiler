@@ -6,7 +6,6 @@ create the abstract symbol treee
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEBUG 1
 #ifdef DEBUG
 #define LOG(s1, s2) printf("DEBUG | %s : %s\n", s1, s2);
 #else
@@ -38,6 +37,7 @@ enum TYPE {
   ALLOC,
   FFREE,
   METHOD,
+  NEW,
 };
 
 //Deprecated! Use Type instead.
@@ -157,6 +157,7 @@ typedef struct _LSymbol {
 //---------------------------------------------
 
 extern LinkedList *GSymList, *LSymList, *TypeList, *ClassList, *curClassField, *curClassMethod;
+extern char *curClassName;
 //Last label used
 extern int label;
 
@@ -200,4 +201,4 @@ void freeReg(Frame*);
 // Push all the registers which are in use to stack
 int pushRegToStack(Frame*, FILE*);
 // Get back all the registers from the stack
-void getRegFromStack(Frame*, FILE*);
+int getRegFromStack(Frame*, FILE*, int);

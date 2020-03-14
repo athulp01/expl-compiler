@@ -61,7 +61,8 @@
 "free" {return _FREE;}
 "class" {return _CLASS;}
 "endclass" {return _ENDCLASS;}
-[a-zA-Z0-9]+ {yylval.name = strdup(yytext); return _ID;}
+"new"	{return _NEW;}
+[a-zA-Z0-9_]+ {yylval.name = strdup(yytext); return _ID;}
 \"(\\.|[^"\\])*\" {yylval.no = createNode(CONST, strdup(yytext), -1, NULL, NULL); return _TEXT;}
 
 %%

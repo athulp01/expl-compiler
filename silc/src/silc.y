@@ -10,6 +10,7 @@
     FILE *out, *yyin;
     LinkedList *GSymList, *LSymList, *LVarList, *GVarList, *TypeList, *curLvar, *ClassList, *curClassField, *curClassMethod;
     Frame *curFrame;
+    char *curClassName;
     int curMemory, curClassFieldMem;
 
     void checkArg(tnode* sym, tnode* arg) {
@@ -38,16 +39,17 @@
                 while((tok = strtok(NULL, "."))) {
                     LOG("field", tok)
                     field = getField(tok, lst);
-                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
+                    lst = field->type?field->type->fields:field->class->fields;
                 } 
             }else {
                 char *tok;
                 LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
                     field = getField(tok, lst);
-                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
+                    lst = field->type?field->type->fields:field->class->fields;
+                    
                 }
             }
             return field?field->type:sym->type;            
@@ -59,8 +61,8 @@
                 LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
                     field = getField(tok, lst);
-                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
+                    lst = field->type?field->type->fields:field->class->fields;
                 }
                 return field?field->type:sym->type; 
             } else {
@@ -82,16 +84,16 @@
                 LinkedList *lst = curClassField;
                 while((tok = strtok(NULL, "."))) {
                     field = getField(tok, lst);
-                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
+                    lst = field->type?field->type->fields:field->class->fields;
                 } 
             }else {
                 char *tok;
                 LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
                     field = getField(tok, lst);
-                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
+                    lst = field->type?field->type->fields:field->class->fields;
                 }
             }
             return field?field->class:sym->class;            
@@ -103,8 +105,8 @@
                 LinkedList *lst = sym->type?sym->type->fields:sym->class->fields;
                 while((tok = strtok(NULL, "."))) {
                     field = getField(tok, lst);
-                    lst = field->type->fields;
                     if(!field) yyerror("Undefined field");
+                    lst = field->type?field->type->fields:field->class->fields;
                 }
                 return field?field->class:sym->class; 
             } else {
@@ -150,13 +152,13 @@
 }
 
 %type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT mainblock
-%type <no> param paramlist fdef return arg args funccall funcstmt init alloc params free methodcall
+%type <no> param paramlist fdef return arg args funccall funcstmt init alloc params free methodcall new
 %type <name> _ID type field 
 %type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock fieldlst methodlst classmemberlst classmember classmemberblock methoddef
 %type <field> fielddef
 
 %token _DECL _ENDDECL _INT _STR _TEXT _MAIN _RET _TYPE _ENDTYPE _NULL
-%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND _INIT _ALLOC _FREE _CLASS _SELF _ENDCLASS
+%token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND _INIT _ALLOC _FREE _CLASS _SELF _ENDCLASS _NEW
 %token _LT _GT _EQ _NE _LE _GE
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD 
 %token _ID _NUM
@@ -173,11 +175,12 @@
 
 /*----------------------------------------------------------Program-----------------------------------------------------------*/
 
-program : typedefblock classdef gdeclblock fdefblock mainblock
-        | typedefblock classdef gdeclblock mainblock
+program : typedefblock classdefblock gdeclblock fdefblock mainblock
+        | typedefblock classdefblock gdeclblock mainblock
         | gdeclblock fdefblock mainblock
         | typedefblock mainblock
         | gdeclblock mainblock
+        | classdefblock gdeclblock mainblock
         | mainblock
         ;
 
@@ -200,9 +203,15 @@ program : typedefblock classdef gdeclblock fdefblock mainblock
  /*-----------------------------------------------------------------------------------------------------------------------------*/
 
   /*--------------------------------------------------------Class defintion-----------------------------------------------------------------*/
+  classdefblock : classdefblock classdef
+                | classdef
+                ;
 
-  classdef : _CLASS _ID '{' classmemberblock methodlst '}' _ENDCLASS      {ClassDef *class = (ClassDef*)malloc(sizeof(ClassDef));
+  classdef : _CLASS _ID '{' classmemberblock methodlst '}' _ENDCLASS      { 
+                                                                 if(searchClass($2, ClassList)) yyerror("Duplicate class");
+                                                                ClassDef *class = (ClassDef*)malloc(sizeof(ClassDef));
                                                                  class->name = $2;
+                                                                 curClassName = $2;
                                                                  class->fields = curClassField;
                                                                  class->methods = curClassMethod;
                                                                  LinkedList *func = $5;
@@ -228,6 +237,7 @@ program : typedefblock classdef gdeclblock fdefblock mainblock
 
   methoddef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'   {
                                                                     Method* tmp = searchMethod($2, curClassMethod);
+                                                                    if(!tmp) yyerror("Method not declared");
                                                                     Frame *frame = (Frame*)malloc(sizeof(Frame));
                                                                     frame->Lvars = $7;
                                                                     tmp->frame = frame;
@@ -238,7 +248,20 @@ program : typedefblock classdef gdeclblock fdefblock mainblock
                                                                     LinkedList *lst = (LinkedList*)malloc(sizeof(LinkedList));
                                                                     lst->data = createNode(METHOD, $2, -1, connect($9, $10), $4); ((tnode*)lst->data)->vartype = searchType($1, TypeList);
                                                                     $$ = lst;
-                                                                    }                                                                  
+                                                                    }     
+            | type _ID '(' paramlist ')' '{'  _BEGIN stmtList return  _END'}'   {
+                                                                    Method* tmp = searchMethod($2, curClassMethod);
+                                                                    Frame *frame = (Frame*)malloc(sizeof(Frame));
+                                                                    frame->Lvars = NULL;
+                                                                    tmp->frame = frame;
+                                                                    tmp->type = searchType($1, TypeList); 
+                                                                    if($9->left->type == VAR) {  
+                                                                        if(strcmp($1, getTypeOfSymbol($9->left->varname)->name)) yyerror("Return type is not correct");
+                                                                    } else if(strcmp($1, $9->left->vartype->name)) yyerror("Return type is not correct");
+                                                                    LinkedList *lst = (LinkedList*)malloc(sizeof(LinkedList));
+                                                                    lst->data = createNode(METHOD, $2, -1, connect($8, $9), $4); ((tnode*)lst->data)->vartype = searchType($1, TypeList);
+                                                                    $$ = lst;
+                                                                    }                                                             
                                                                     
             ;
 
@@ -254,18 +277,20 @@ classmember : type gvarlist _SEMI                             {
                                                                 while(gvars) {
                                                                     GVariable *var = (GVariable*)(gvars->data);
                                                                     if(var->isfunc) {
-                                                                        LOG("method decl", var->name)
+                                                                        if(searchMethod(var->name, curClassMethod)) yyerror("Duplicate method");
                                                                         Method* tmp = (Method*)malloc(sizeof(Method));
+                                                                        ClassDef *class = searchClass($1, ClassList);
                                                                         Type *type = (Type*)searchType($1, TypeList);
-                                                                        if(type==NULL) yyerror("Undefined type");
-                                                                        *tmp = (Method){.name=var->name, .type=type, .params=var->params};
+                                                                        if(type==NULL && class==NULL) yyerror("Undefined type");
+                                                                        *tmp = (Method){.name=var->name, .type=type, .class=class, .params=var->params};
                                                                         methods = addNode(tmp, sizeof(Method), methods);
                                                                     } else {
-                                                                        LOG("field decl", var->name)
+                                                                        if(getField(var->name, curClassField)) yyerror("Duplicate field");
                                                                         Field* tmp = (Field*)malloc(sizeof(Field));
+                                                                        ClassDef *class = searchClass($1, ClassList);
                                                                         Type *type = (Type*)searchType($1, TypeList);
-                                                                        if(type==NULL) yyerror("Undefined type");
-                                                                        *tmp = (Field){.name=var->name, .type=type, .idx = curClassFieldMem++};
+                                                                        if(type==NULL && class==NULL) yyerror("Undefined type");
+                                                                        *tmp = (Field){.name=var->name, .type=type, .class=class, .idx = curClassFieldMem++};
                                                                         fields = addNode(tmp, sizeof(Field), fields);
                                                                     }
                                                                     gvars = gvars->next;
@@ -276,13 +301,26 @@ classmember : type gvarlist _SEMI                             {
      ;        
 
 methodcall : field  '(' args ')'                    {   char *dup = strdup($1);
+                                                        char *prev;
                                                         LOG("methodname", dup)char *s = strtok(dup, ".");
                                                         GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
                                                         if(sym==NULL) sym = (GSymbol*)searchSymbol(s, curLvar);
                                                         if(sym== NULL) yyerror("Function is not declared");
-                                                        s=strtok(NULL, ".");
+                                                        LinkedList *lst = sym->class->fields, *methods = sym->class->methods;
+                                                        Field *field;
+                                                        prev = strdup(s);
+                                                        while((s=strtok(NULL, "."))) {
+                                                            prev = strdup(s);
+                                                            field = getField(s, lst);
+                                                            if(field) {
+                                                                methods = field->class->methods;
+                                                                lst = field->class->fields;
+                                                            }
+                                                        }
                                                         $$ = createNode(METHOD, $1, -1, $3, NULL);
-                                                        $$->vartype = searchMethod(s, sym->class->methods)->type;
+                                                        Method* method = searchMethod(prev, methods);
+                                                        if(!method) yyerror("Method not found");
+                                                        $$->vartype = method->type;
                                                         }
             ;
  /*--------------------------------------------------------Type defintion-----------------------------------------------------------------*/
@@ -398,6 +436,8 @@ init : _INIT '(' ')'                                      {$$ = createNode(INIT,
 alloc : _ALLOC '(' ')'                                 {$$ = createNode(ALLOC, "", -1, NULL, NULL); $$->vartype = searchType("int", TypeList);}
       ;
 
+new   : _NEW '(' _ID ')'                                {$$ = createNode(NEW, $3, -1, NULL, NULL); $$->vartype = searchType("int", TypeList);}
+      ;
 free : _FREE '(' _ID ')' _SEMI                          {tnode *tmp = createNode(VAR, $3, -1, NULL, NULL);tmp->vartype = getTypeOfSymbol($3);tmp->varclass = getClassOfSymbol($3);
                                                         $$ = createNode(FFREE, "", -1, tmp, NULL);}
      ;
@@ -464,6 +504,7 @@ funccall : _ID '(' args ')'                      {  GSymbol* sym = (GSymbol*)sea
          | alloc                                        {$$ = $1;}
          | init                                         {$$ = $1;}
          | methodcall                                    {$$ = $1;}
+         | new                                          {$$ = $1;}
          ;
 funcstmt : funccall _SEMI                               { $$ = $1;}
          ;
@@ -601,14 +642,28 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
                                                                     $$ = createNode(FUNC, $2, -1, connect($9, $10), $4); $$->vartype = searchType($1, TypeList);
                                                                     curLvar = NULL;
                                                                     }                                                                  
-                                                                    
-            ;
+    | type _ID '(' paramlist ')' '{' _BEGIN stmtList return  _END'}'   {
+                                                                    GSymbol* tmp = searchSymbol($2, GSymList);                                                                    
+                                                                    if(tmp == NULL) yyerror("Function is not declared");
+                                                                    if(tmp->frame != NULL) yyerror("Function is already defined");
+                                                                    checkArg(tmp->params, $4);
+                                                                    Frame *frame = (Frame*)malloc(sizeof(Frame));
+                                                                    frame->Lvars = NULL;
+                                                                    tmp->frame = frame;
+                                                                    tmp->type = searchType($1, TypeList); 
+                                                                    if($9->left->type == VAR) {  
+                                                                        if(strcmp($1, getTypeOfSymbol($9->left->varname)->name)) yyerror("Return type is not correct");
+                                                                    } else if(strcmp($1, $9->left->vartype->name)) yyerror("Return type is not correct");
+                                                                    $$ = createNode(FUNC, $2, -1, connect($8, $9), $4); $$->vartype = searchType($1, TypeList);
+                                                                    curLvar = NULL;
+                                                                    }                                                                       
+    ;
 
 paramlist : params                                      {curLvar = addParam($1); $$ = $1; 
                                                         LSymbol* tmp = malloc(sizeof(LSymbol));
-                                                        Type *type = malloc(sizeof(LSymbol));;
-                                                        *type = (Type){.fields=curClassField};
-                                                        *tmp = (LSymbol){.name = "self", .type=type };
+                                                        ClassDef *type = malloc(sizeof(ClassDef));;
+                                                        *type = (ClassDef){.fields=curClassField, .methods=curClassMethod};
+                                                        *tmp = (LSymbol){.name = "self", .class=type };
                                                         curLvar = addNode(tmp, sizeof(LSymbol), curLvar);}
           ;
 params : params _COMMA param                            { $$ = connect($3, $1);}

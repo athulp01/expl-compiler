@@ -21,7 +21,6 @@ int searchField(char *s, LinkedList *front) {
   while(front) {
     Field* field = (Field*)front->data;
     if(!strcmp(field->name, s)) {
-      printf("%d\n",field->idx );
       return field->idx;
     }
     front = front->next;
@@ -35,7 +34,7 @@ ClassDef* searchClass(char *s, LinkedList *front) {
     if(!strcmp(class->name, s)) return class;
     front = front->next;
   }
-  return 0;
+  return NULL;
 }
 
 Method* searchMethod(char *s, LinkedList *front) {
@@ -70,7 +69,7 @@ tnode* createNode(enum TYPE type, char* s, int n, tnode* l,
       break;
   case ASSN:
   case OP:
-    if(r->type == ALLOC) {
+    if(r->type == ALLOC || r->type == NEW) {
       if(!strcmp(l->vartype?l->vartype->name:l->varclass->name, "int") || !strcmp(l->vartype?l->vartype->name:l->varclass->name, "str"))
           yyerror("Dynamic allocation is possible only for user defined types");
       break;
@@ -190,11 +189,15 @@ int pushRegToStack(Frame *frame, FILE *out) {
   return count;
 }
 
-void getRegFromStack(Frame *frame, FILE *out) {
+int getRegFromStack(Frame *frame, FILE *out, int num) {
+  int count = 0;
   for (reg_index i = 19; i >= 0; i--) {
-    if (frame->registers[i] == RESV) {
+    if (num && frame->registers[i] == RESV) {
+      count++;
+      num--;
       fprintf(out, "POP R%d \\register\n", i);
       frame->registers[i] = IN_USE;
     }
   }
+  return count;
 }

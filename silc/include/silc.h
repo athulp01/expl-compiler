@@ -75,27 +75,28 @@ extern int yydebug;
     _CLASS = 281,
     _SELF = 282,
     _ENDCLASS = 283,
-    _LT = 284,
-    _GT = 285,
-    _EQ = 286,
-    _NE = 287,
-    _LE = 288,
-    _GE = 289,
-    _PLUS = 290,
-    _MINUS = 291,
-    _MUL = 292,
-    _DIV = 293,
-    _END = 294,
-    _BEGIN = 295,
-    _READ = 296,
-    _WRITE = 297,
-    _SEMI = 298,
-    _EQUALS = 299,
-    _Q = 300,
-    _COMMA = 301,
-    _MOD = 302,
-    _ID = 303,
-    _NUM = 304
+    _NEW = 284,
+    _LT = 285,
+    _GT = 286,
+    _EQ = 287,
+    _NE = 288,
+    _LE = 289,
+    _GE = 290,
+    _PLUS = 291,
+    _MINUS = 292,
+    _MUL = 293,
+    _DIV = 294,
+    _END = 295,
+    _BEGIN = 296,
+    _READ = 297,
+    _WRITE = 298,
+    _SEMI = 299,
+    _EQUALS = 300,
+    _Q = 301,
+    _COMMA = 302,
+    _MOD = 303,
+    _ID = 304,
+    _NUM = 305
   };
 #endif
 /* Tokens.  */
@@ -125,33 +126,34 @@ extern int yydebug;
 #define _CLASS 281
 #define _SELF 282
 #define _ENDCLASS 283
-#define _LT 284
-#define _GT 285
-#define _EQ 286
-#define _NE 287
-#define _LE 288
-#define _GE 289
-#define _PLUS 290
-#define _MINUS 291
-#define _MUL 292
-#define _DIV 293
-#define _END 294
-#define _BEGIN 295
-#define _READ 296
-#define _WRITE 297
-#define _SEMI 298
-#define _EQUALS 299
-#define _Q 300
-#define _COMMA 301
-#define _MOD 302
-#define _ID 303
-#define _NUM 304
+#define _NEW 284
+#define _LT 285
+#define _GT 286
+#define _EQ 287
+#define _NE 288
+#define _LE 289
+#define _GE 290
+#define _PLUS 291
+#define _MINUS 292
+#define _MUL 293
+#define _DIV 294
+#define _END 295
+#define _BEGIN 296
+#define _READ 297
+#define _WRITE 298
+#define _SEMI 299
+#define _EQUALS 300
+#define _Q 301
+#define _COMMA 302
+#define _MOD 303
+#define _ID 304
+#define _NUM 305
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 143 "./src/silc.y"
+#line 145 "./src/silc.y"
 
 	tnode *no;
     char *name;
@@ -160,7 +162,7 @@ union YYSTYPE
     Field* field;
 	
 
-#line 164 "./include/silc.h"
+#line 166 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
