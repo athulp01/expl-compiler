@@ -6,7 +6,9 @@
     #include "datastructures.h"
 
 	int yylex(void);
+  char virtual[1000];
     int yyerror(char*);
+    int classno = 0, mid =0;
     FILE *out, *yyin;
     LinkedList *GSymList, *LSymList, *LVarList, *GVarList, *TypeList, *curLvar, *ClassList, *curClassField, *curClassMethod;
     Frame *curFrame;
@@ -157,7 +159,7 @@
 %type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock fieldlst methodlst classmemberlst classmember classmemberblock methoddef
 %type <field> fielddef
 
-%token _DECL _ENDDECL _INT _STR _TEXT _MAIN _RET _TYPE _ENDTYPE _NULL
+%token _DECL _ENDDECL _INT _STR _TEXT _MAIN _RET _TYPE _ENDTYPE _NULL _EXTENDS
 %token _IF _WHILE _THEN _ELSE _ENDIF _ENDWHILE _DO _BREAK _CONT _AND _INIT _ALLOC _FREE _CLASS _SELF _ENDCLASS _NEW
 %token _LT _GT _EQ _NE _LE _GE
 %token _PLUS _MINUS _MUL _DIV _END _BEGIN _READ _WRITE _SEMI _EQUALS _Q _COMMA _MOD 
@@ -197,6 +199,7 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                              *tmp = (GSymbol){.name="main", .params=NULL, .frame=frame};
                                                              GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
                                                              fprintf(out ,"main:\nBRKP\n");
+                                                             fprintf(out, "%s", virtual);
                                                              eval_func(node, out);
                                                             } 
 
@@ -212,9 +215,69 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                 ClassDef *class = (ClassDef*)malloc(sizeof(ClassDef));
                                                                  class->name = $2;
                                                                  curClassName = $2;
+                                                                 class->idx = classno++;
                                                                  class->fields = curClassField;
                                                                  class->methods = curClassMethod;
                                                                  LinkedList *func = $5;
+                                                                 ClassList = addNode(class, sizeof(ClassDef), ClassList);
+                                                                 tnode *tmp;
+                                                                 while(func) {
+                                                                     tmp = (tnode*)func->data;
+                                                                     char *s = malloc(sizeof($2)+sizeof(tmp->varname)+2);
+                                                                     strcpy(s, $2);
+                                                                     strcat(s, ".");
+                                                                     strcat(s, tmp->varname);
+                                                                     char t[50];
+                                                                     sprintf(t, "MOV R19, %s\nMOV [%d], R19\n", s, class->idx*8 + 4096+searchMethod(tmp->varname, curClassMethod)->idx);
+                                                                     strcat(virtual, t);
+                                                                     fprintf(out, "%s:\n",s);
+                                                                     eval_method(tmp, curClassMethod, out);
+                                                                     func = func->next;
+                                                                 }
+                                                                 curClassMethod = NULL;
+                                                                 curClassField = NULL;
+                                                                  curMemory = (classno + 1)*8 + 4096;
+                                                                  mid=0;
+                                                                }
+           | _CLASS _ID _EXTENDS _ID '{' classmemberblock methodlst '}' _ENDCLASS      { 
+                                                                 if(searchClass($2, ClassList)) yyerror("Duplicate class");
+                                                                 ClassDef *parent = searchClass($4, ClassList);
+                                                                 if(!parent) yyerror("Parent class is not defines");
+                                                                 ClassDef *class = (ClassDef*)malloc(sizeof(ClassDef));
+                                                                 class->name = $2;
+                                                                 curClassName = $2;
+                                                                 class->idx = classno++;
+                                                                 class->fields = curClassField;
+                                                                 class->parent = parent;
+                                                                 int nummethods = 0;
+                                                                 LinkedList *mtds = curClassMethod;
+                                                                 while(mtds) {
+                                                                    nummethods++;
+                                                                     char s[100];
+                                                                     strcpy(s, $2);
+                                                                     strcat(s, ".");
+                                                                     strcat(s, ((Method*)mtds->data)->name);
+                                                                     char t[50];
+                                                                    sprintf(t, "MOV R19, %s\nMOV [%d], R19\n",s, class->idx*8+4096+((Method*)mtds->data)->idx);
+                                                                     strcat(virtual, t);
+                                                                    mtds = mtds->next;
+                                                                  }
+                                                                 mtds = copyList(parent->methods, sizeof(Method));
+                                                                 LinkedList* parentm = mtds;
+                                                                 while(mtds) {
+                                                                    ((Method*)mtds->data)->idx += nummethods;
+                                                                     char s[100];
+                                                                     strcpy(s, class->parent->name);
+                                                                     strcat(s, ".");
+                                                                     strcat(s, ((Method*)mtds->data)->name);
+                                                                     char t[50];
+                                                                    sprintf(t, "MOV R19, %s\nMOV [%d], R19\n",s, class->idx*8+4096+((Method*)mtds->data)->idx);
+                                                                    strcat(virtual, t);
+                                                                    mtds = mtds->next;
+                                                                  }
+                                                                 class->methods = connectList(curClassMethod, parentm, sizeof(Method));
+                                                                 class->parent = parent;
+                                                                 LinkedList *func = $7;
                                                                  ClassList = addNode(class, sizeof(ClassDef), ClassList);
                                                                  tnode *tmp;
                                                                  while(func) {
@@ -228,9 +291,10 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                      func = func->next;
                                                                  }
                                                                  curClassMethod = NULL;
+                                                                 mid = 0;
                                                                  curClassField = NULL;
+                                                                  curMemory = (classno + 1)*8 + 4096;
                                                                 }
-           ;
 
   methodlst : methodlst methoddef                               {$$ = connectList($1, $2, sizeof(tnode));}
             | methoddef                                         {$$ = $1;}
@@ -283,6 +347,7 @@ classmember : type gvarlist _SEMI                             {
                                                                         Type *type = (Type*)searchType($1, TypeList);
                                                                         if(type==NULL && class==NULL) yyerror("Undefined type");
                                                                         *tmp = (Method){.name=var->name, .type=type, .class=class, .params=var->params};
+                                                                        tmp->idx = mid++;
                                                                         methods = addNode(tmp, sizeof(Method), methods);
                                                                     } else {
                                                                         if(getField(var->name, curClassField)) yyerror("Duplicate field");
@@ -291,6 +356,7 @@ classmember : type gvarlist _SEMI                             {
                                                                         Type *type = (Type*)searchType($1, TypeList);
                                                                         if(type==NULL && class==NULL) yyerror("Undefined type");
                                                                         *tmp = (Field){.name=var->name, .type=type, .class=class, .idx = curClassFieldMem++};
+                                                                        if(class) curClassFieldMem++;
                                                                         fields = addNode(tmp, sizeof(Field), fields);
                                                                     }
                                                                     gvars = gvars->next;
@@ -302,6 +368,7 @@ classmember : type gvarlist _SEMI                             {
 
 methodcall : field  '(' args ')'                    {   char *dup = strdup($1);
                                                         char *prev;
+                                                
                                                         LOG("methodname", dup)char *s = strtok(dup, ".");
                                                         GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
                                                         if(sym==NULL) sym = (GSymbol*)searchSymbol(s, curLvar);
@@ -577,6 +644,7 @@ gdecl : type gvarlist _SEMI                             {
                                                                 if(type==NULL && class==NULL)
                                                                     yyerror("Undefined type");
                                                                 *tmp = (GSymbol){.name=var->name, .type=type, .class=class, .size=var->size, .params=var->params, .binding=curMemory};
+                                                                if(class) curMemory++;
                                                                 GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
                                                                 gvars = gvars->next;
                                                                 curMemory+=var->size;
@@ -687,13 +755,15 @@ int main(int argc, char **argv) {
         printf("Usage: ./silc <source_file>\n");
         exit(1);
     }
-    curMemory = 4096;
+    // TODO: change curMemory after vft
     curClassFieldMem = 1;
+    mid = 0;
     GSymList = NULL;
     LSymList = NULL;
     LVarList = NULL;
     GVarList = NULL;
     curLvar = NULL;
+    curMemory = 4096;
     Type *type = (Type*)malloc(sizeof(Type));
     *type = (Type){.name="int", .size=1, .fields=NULL};
     TypeList = addNode(type, sizeof(Type), TypeList);

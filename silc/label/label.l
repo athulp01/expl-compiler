@@ -27,6 +27,7 @@ label [a-zA-Z0-9._]+[:](\n)
 branch1 ("JZ"|"JNZ")[' ']+[R][0-9]+[,][' ']*[a-zA-Z0-9._]+
 branch2 ("JMP")[' ']+[a-zA-Z0-9._]+
 branch3 ("CALL")[' '][a-zA-Z._]+
+virtual ("MOV R19, ")[a-zA-Z0-9._]+
 start ("START")
 
 %%
@@ -124,6 +125,26 @@ start ("START")
                 while(tmp) {
                     if(strcmp(tmp->label, "main") == 0) {
                         fprintf(translated, "%d\n", tmp->mem);
+                        found = 1;
+                        break;
+                    }
+                    tmp = tmp->next;
+                }
+                if(!found) {
+                    printf("Label not found\n");
+                    exit(1);
+                }
+            }
+}
+{virtual} {
+
+            if(pass == 2) {
+                int found = 0;
+                struct labelNode* tmp = head;
+                while(tmp) {
+                    if(strcmp(tmp->label, yytext+9) == 0) {
+                        char *front = strtok(yytext, ",");
+                        fprintf(translated, "%s, %d\n", front, tmp->mem);
                         found = 1;
                         break;
                     }

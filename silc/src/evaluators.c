@@ -1,19 +1,23 @@
-#include "evaluators.h"
+#include "../include/evaluators.h"
 
-#include "datastructures.h"
+#include "../include/datastructures.h"
 #include "string.h"
+#include <stdio.h>
 
 int yyerror(char*);
 
-/* TODO: fImplement type checking, array bound checking */
+/* TODO: Implement type checking, array bound checking */
 
 LabelList* llist;
 LinkedList* GSymList;
 
 
+/* Search local and global symbol table and returns the address
+*/
 reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
     int binding;
-    char *name = strtok(root->varname, ".");
+    char *dup = strdup(root->varname);
+    char *name = strtok(dup, ".");
     Field *field;
     GSymbol* sym = searchSymbol(name, frame->Lvars);
     if (sym) {  // local variable
@@ -67,9 +71,11 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
         freeReg(frame);
         return mem;
       } else {
+        printf("%s:", root->varname);
         yyerror("Undefined variable");
       }
     }
+    return -1;
 }
 
 // Evaluates a tree by calling the respective functions according to node type
@@ -122,7 +128,6 @@ void eval_tree(tnode* root, Frame* frame, FILE* out) {
 reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
     return 0;
-
   reg_index cur = getReg(frame);
   if (root->type == CONST) {
     if (!strcmp(root->vartype->name, "int"))
@@ -222,7 +227,16 @@ void eval_assgn(tnode* root, Frame* frame, FILE* out) {
     right = eval_alloc(4, frame, out);
   } else if(root->right->type == NEW) {
     right = eval_new(root->right, frame, out);
+    int idx = searchClass(root->right->varname, ClassList)->idx;
+    reg_index vtp = getReg(frame);
+    fprintf(out, "MOV R%d, R%d\nADD R%d, 1\nMOV [R%d], %d\n",vtp, binding, vtp, vtp, idx*8+4096);
+    freeReg(frame);
   }else right = eval_expr(root->right, frame, out);
+  if(root->right->varclass) {
+    reg_index vtp = getReg(frame);
+    fprintf(out, "MOV R%d, R%d\nADD R%d, 1\nMOV [R%d], R%d\n",vtp, binding, vtp, vtp, root->right->varclass->idx*8+4096);
+    freeReg(frame);
+  }
   fprintf(out, "MOV [R%d], R%d\n", binding, right);
   freeReg(frame);
   freeReg(frame);
@@ -296,7 +310,7 @@ reg_index call_method(tnode* root, Frame* frame, FILE* out) {
   char *prev;
   GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
   if(!sym) sym = (GSymbol*)searchSymbol(s, frame->Lvars);
-  LinkedList *lst = sym->class->fields;
+  LinkedList *lst = sym->class->fields, *plst = NULL;
   Field *field = NULL;
   while((s = strtok(NULL, "."))) {
     prev = strdup(s);
@@ -304,22 +318,35 @@ reg_index call_method(tnode* root, Frame* frame, FILE* out) {
     if(field) lst = field->class->fields;
   }
   char *callname = (char*)malloc(sizeof(field?field->class->name:sym->class->name) + 2 + sizeof(s));
-  strcat(callname, field?field->class->name:sym->class->name);
-  strcat(callname, ".");
-  strcat(callname, prev);
+  ClassDef* class = searchClass(field?field->class->name:sym->class->name, ClassList);
   int reg = pushRegToStack(frame, out);
   pushArgToStack(root->left, frame, out);
   reg_index self = getAddress(root, frame, out);
   fprintf(out, "PUSH R%d\n", self); //Push self pointer as an argument
+  fprintf(out, "MOV R%d, %d\nPUSH R%d\n", self, class->idx*8+4096, self); //Push self pointer as an argument
   freeReg(frame);
   reg_index tmp = getReg(frame);
   fprintf(out, "PUSH R%d\n", tmp);
   freeReg(frame);
-  fprintf(out, "CALL %s\n", callname);
+  int i;
+  for(i=strlen(root->varname)-1; i>=0; i--) {
+    if(root->varname[i]=='.') break;
+  }
+  char *ff = strndup(root->varname, i);
+  tnode tde = {.varname=ff};
+  reg_index addr = getAddress(&tde, frame, out);
+  reg_index vte = getReg(frame);
+  fprintf(out, "ADD R%d, 1\nMOV R%d, [R%d]\n", addr, vte, addr);
+  fprintf(out, "ADD R%d, %d\n", vte, searchMethod(prev, class->methods)->idx);
+  freeReg(frame);
+  freeReg(frame);
+  fprintf(out, "MOV R%d, [R%d]\n", addr, vte);
+  fprintf(out, "CALL R%d\n", addr);
   tmp = getReg(frame);
   fprintf(out, "POP R%d\n", tmp);
   popArgFromStack(root->left, frame, out);
   reg_index val = getReg(frame);
+  fprintf(out, "POP R%d\n", val);
   fprintf(out, "POP R%d\n", val);
   freeReg(frame);
   //Only pop if pushed
@@ -341,9 +368,12 @@ void eval_func(tnode* root, FILE* out) {
   reg_index tmp = getReg(frame);
   while (list) {
     ((LSymbol*)list->data)->binding = count++;
+    if(((LSymbol*)list->data)->class) {
+      fprintf(out, "PUSH R%d\n",tmp);  // push a free space for the variable
+      count++;
+    }
+    fprintf(out, "PUSH R%d\n",tmp);  // push a free space for the variable
     list = list->next;
-    fprintf(out, "PUSH R%d\n",
-            tmp);  // push a free space for the variable
   }
   freeReg(frame);
   addArgSymbol(root->right, frame, -3, out);
@@ -364,17 +394,21 @@ void eval_method(tnode* root, LinkedList *methods, FILE* out) {
   reg_index tmp = getReg(frame);
   while (list) {
     ((LSymbol*)list->data)->binding = count++;
-    list = list->next;
+    if(((LSymbol*)list->data)->class) {
+      fprintf(out, "PUSH R%d\n",tmp);  // push a free space for the variable
+      count++;
+    }
     fprintf(out, "PUSH R%d\n",
             tmp);  // push a free space for the variable
+    list = list->next;
   }
   freeReg(frame);
   ClassDef *type = malloc(sizeof(ClassDef));;
   *type = (ClassDef){.fields=curClassField, .methods=curClassMethod};
   LSymbol *var = (LSymbol*)malloc(sizeof(LSymbol));
-  *var = (LSymbol){.name="self", .class=searchClass(curClassName, ClassList), .size=1, .binding=-3};
+  *var = (LSymbol){.name="self", .class=searchClass(curClassName, ClassList), .size=1, .binding=-4};
   frame->Lvars = addNode(var, sizeof(LSymbol), frame->Lvars);
-  addArgSymbol(root->right, frame, -4, out);
+  addArgSymbol(root->right, frame, -5, out);
   eval_tree(root->left, frame, out);
 }
 // Do a inorder traversal and set the binding of the function arguments
@@ -442,6 +476,8 @@ void eval_return(tnode* root, Frame* frame, FILE* out) {
   freeReg(frame);
 }
 
+/* Initialize the heap 
+ * */
 void eval_init(Frame *frame, FILE *out) {
   int reg = pushRegToStack(frame, out);
   reg_index init = getReg(frame);
@@ -452,6 +488,8 @@ void eval_init(Frame *frame, FILE *out) {
   getRegFromStack(frame, out, reg);
 }
 
+/* Allocate a block of size 8 regardless of the size parameter
+ */
 reg_index eval_alloc(int size, Frame *frame, FILE *out) {
   int reg = pushRegToStack(frame, out);
   reg_index addr = getReg(frame);
@@ -473,6 +511,8 @@ reg_index eval_new(tnode *root,  Frame *frame, FILE *out) {
   return eval_alloc(4,frame, out);
 }
 
+/* Release the block of size 8
+ */
 void eval_free(tnode *root, Frame *frame, FILE *out) {
   int reg = pushRegToStack(frame, out);
   reg_index mem = getAddress(root->left, frame, out);

@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.4.2.  */
+/* A Bison parser, made by GNU Bison 3.5.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2019 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -59,44 +59,45 @@ extern int yydebug;
     _TYPE = 265,
     _ENDTYPE = 266,
     _NULL = 267,
-    _IF = 268,
-    _WHILE = 269,
-    _THEN = 270,
-    _ELSE = 271,
-    _ENDIF = 272,
-    _ENDWHILE = 273,
-    _DO = 274,
-    _BREAK = 275,
-    _CONT = 276,
-    _AND = 277,
-    _INIT = 278,
-    _ALLOC = 279,
-    _FREE = 280,
-    _CLASS = 281,
-    _SELF = 282,
-    _ENDCLASS = 283,
-    _NEW = 284,
-    _LT = 285,
-    _GT = 286,
-    _EQ = 287,
-    _NE = 288,
-    _LE = 289,
-    _GE = 290,
-    _PLUS = 291,
-    _MINUS = 292,
-    _MUL = 293,
-    _DIV = 294,
-    _END = 295,
-    _BEGIN = 296,
-    _READ = 297,
-    _WRITE = 298,
-    _SEMI = 299,
-    _EQUALS = 300,
-    _Q = 301,
-    _COMMA = 302,
-    _MOD = 303,
-    _ID = 304,
-    _NUM = 305
+    _EXTENDS = 268,
+    _IF = 269,
+    _WHILE = 270,
+    _THEN = 271,
+    _ELSE = 272,
+    _ENDIF = 273,
+    _ENDWHILE = 274,
+    _DO = 275,
+    _BREAK = 276,
+    _CONT = 277,
+    _AND = 278,
+    _INIT = 279,
+    _ALLOC = 280,
+    _FREE = 281,
+    _CLASS = 282,
+    _SELF = 283,
+    _ENDCLASS = 284,
+    _NEW = 285,
+    _LT = 286,
+    _GT = 287,
+    _EQ = 288,
+    _NE = 289,
+    _LE = 290,
+    _GE = 291,
+    _PLUS = 292,
+    _MINUS = 293,
+    _MUL = 294,
+    _DIV = 295,
+    _END = 296,
+    _BEGIN = 297,
+    _READ = 298,
+    _WRITE = 299,
+    _SEMI = 300,
+    _EQUALS = 301,
+    _Q = 302,
+    _COMMA = 303,
+    _MOD = 304,
+    _ID = 305,
+    _NUM = 306
   };
 #endif
 /* Tokens.  */
@@ -110,50 +111,51 @@ extern int yydebug;
 #define _TYPE 265
 #define _ENDTYPE 266
 #define _NULL 267
-#define _IF 268
-#define _WHILE 269
-#define _THEN 270
-#define _ELSE 271
-#define _ENDIF 272
-#define _ENDWHILE 273
-#define _DO 274
-#define _BREAK 275
-#define _CONT 276
-#define _AND 277
-#define _INIT 278
-#define _ALLOC 279
-#define _FREE 280
-#define _CLASS 281
-#define _SELF 282
-#define _ENDCLASS 283
-#define _NEW 284
-#define _LT 285
-#define _GT 286
-#define _EQ 287
-#define _NE 288
-#define _LE 289
-#define _GE 290
-#define _PLUS 291
-#define _MINUS 292
-#define _MUL 293
-#define _DIV 294
-#define _END 295
-#define _BEGIN 296
-#define _READ 297
-#define _WRITE 298
-#define _SEMI 299
-#define _EQUALS 300
-#define _Q 301
-#define _COMMA 302
-#define _MOD 303
-#define _ID 304
-#define _NUM 305
+#define _EXTENDS 268
+#define _IF 269
+#define _WHILE 270
+#define _THEN 271
+#define _ELSE 272
+#define _ENDIF 273
+#define _ENDWHILE 274
+#define _DO 275
+#define _BREAK 276
+#define _CONT 277
+#define _AND 278
+#define _INIT 279
+#define _ALLOC 280
+#define _FREE 281
+#define _CLASS 282
+#define _SELF 283
+#define _ENDCLASS 284
+#define _NEW 285
+#define _LT 286
+#define _GT 287
+#define _EQ 288
+#define _NE 289
+#define _LE 290
+#define _GE 291
+#define _PLUS 292
+#define _MINUS 293
+#define _MUL 294
+#define _DIV 295
+#define _END 296
+#define _BEGIN 297
+#define _READ 298
+#define _WRITE 299
+#define _SEMI 300
+#define _EQUALS 301
+#define _Q 302
+#define _COMMA 303
+#define _MOD 304
+#define _ID 305
+#define _NUM 306
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 145 "./src/silc.y"
+#line 147 "./src/silc.y"
 
 	tnode *no;
     char *name;
@@ -162,7 +164,7 @@ union YYSTYPE
     Field* field;
 	
 
-#line 166 "./include/silc.h"
+#line 168 "./include/silc.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
