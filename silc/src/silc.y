@@ -68,7 +68,7 @@
                 }
                 return field?field->type:sym->type; 
             } else {
-                printf("%s", sname);
+                printf("hete%s", sname);
                 yyerror("Undefined variable");
                 return NULL;
             }
@@ -124,6 +124,7 @@
         LinkedList *res = NULL;
         if(root->type != CONN) {
             res = (LinkedList*)malloc(sizeof(LinkedList));
+            // printf("%s %s\n", root->vartype->name, root->varname);
             LSymbol* tmp = malloc(sizeof(LSymbol));
             *tmp = (LSymbol){.name = root->varname, .type = root->vartype};
             res->data = (void*)tmp;
@@ -132,11 +133,12 @@
         }else {
             LinkedList *right = addParam(root->right);
             LinkedList *left = addParam(root->left);
-            if(right) {
-                right->next = left;
-                return right;
-            }
-            return left;
+            return connectList(right, left, sizeof(LSymbol));
+            // if(right) {
+            //     right->next = left;
+            //     return right;
+            // }
+            // return left;
         }
 
     }
@@ -155,7 +157,7 @@
 
 %type <no> expr _NUM _END read write stmt stmtList assgn ifstmt whilestmt break cont _TEXT mainblock
 %type <no> param paramlist fdef return arg args funccall funcstmt init alloc params free methodcall new
-%type <name> _ID type field 
+%type <name> _ID type field inherit
 %type <list> gvarlist lvarlist ldecl gdeclblock gdecl ldecllist ldeclblock fieldlst methodlst classmemberlst classmember classmemberblock methoddef
 %type <field> fielddef
 
@@ -218,6 +220,11 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                  class->idx = classno++;
                                                                  class->fields = curClassField;
                                                                  class->methods = curClassMethod;
+                                                                 LinkedList *mets = class->methods;
+                                                                 while(mets) {
+                                                                    ((Method*)mets->data)->class = class;
+                                                                    mets = mets->next;
+                                                                 }
                                                                  LinkedList *func = $5;
                                                                  ClassList = addNode(class, sizeof(ClassDef), ClassList);
                                                                  tnode *tmp;
@@ -239,20 +246,28 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                   curMemory = (classno + 1)*8 + 4096;
                                                                   mid=0;
                                                                 }
-           | _CLASS _ID _EXTENDS _ID '{' classmemberblock methodlst '}' _ENDCLASS      { 
+           | _CLASS _ID inherit '{' classmemberblock methodlst '}' _ENDCLASS      { 
                                                                  if(searchClass($2, ClassList)) yyerror("Duplicate class");
-                                                                 ClassDef *parent = searchClass($4, ClassList);
+                                                                 ClassDef *parent = searchClass($3, ClassList);
                                                                  if(!parent) yyerror("Parent class is not defines");
                                                                  ClassDef *class = (ClassDef*)malloc(sizeof(ClassDef));
                                                                  class->name = $2;
                                                                  curClassName = $2;
                                                                  class->idx = classno++;
                                                                  class->fields = curClassField;
+                                                                 int begin = 1;
+                                                                 LinkedList *f = class->fields;
+                                                                 while(f) {
+                                                                     printf("%d ", ((Field*)f->data)->idx);
+                                                                     ((Field*)f->data)->idx = begin++;
+                                                                     f = f->next;
+                                                                 }
                                                                  class->parent = parent;
                                                                  int nummethods = 0;
                                                                  LinkedList *mtds = curClassMethod;
                                                                  while(mtds) {
                                                                     nummethods++;
+                                                                    ((Method*)mtds->data)->class = class;
                                                                      char s[100];
                                                                      strcpy(s, $2);
                                                                      strcat(s, ".");
@@ -265,9 +280,15 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                  mtds = copyList(parent->methods, sizeof(Method));
                                                                  LinkedList* parentm = mtds;
                                                                  while(mtds) {
-                                                                    ((Method*)mtds->data)->idx += nummethods;
+                                                                    Method* child = searchMethod(((Method*)mtds->data)->name, curClassMethod);
+                                                                    if(child) {
+                                                                    ((Method*)mtds->data)->idx += child->idx;
+                                                                    mtds = mtds->next;
+                                                                    continue;
+                                                                      }
+                                                                    ((Method*)mtds->data)->idx += nummethods-1;
                                                                      char s[100];
-                                                                     strcpy(s, class->parent->name);
+                                                                     strcpy(s, ((Method*)mtds->data)->class->name);
                                                                      strcat(s, ".");
                                                                      strcat(s, ((Method*)mtds->data)->name);
                                                                      char t[50];
@@ -277,7 +298,7 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                   }
                                                                  class->methods = connectList(curClassMethod, parentm, sizeof(Method));
                                                                  class->parent = parent;
-                                                                 LinkedList *func = $7;
+                                                                 LinkedList *func = $6;
                                                                  ClassList = addNode(class, sizeof(ClassDef), ClassList);
                                                                  tnode *tmp;
                                                                  while(func) {
@@ -295,6 +316,11 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                  curClassField = NULL;
                                                                   curMemory = (classno + 1)*8 + 4096;
                                                                 }
+ inherit : _EXTENDS _ID  {
+                              curClassField = searchClass($2, ClassList)->fields;
+                              $$ = $2;
+                          }
+         ;
 
   methodlst : methodlst methoddef                               {$$ = connectList($1, $2, sizeof(tnode));}
             | methoddef                                         {$$ = $1;}
@@ -312,6 +338,7 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                     LinkedList *lst = (LinkedList*)malloc(sizeof(LinkedList));
                                                                     lst->data = createNode(METHOD, $2, -1, connect($9, $10), $4); ((tnode*)lst->data)->vartype = searchType($1, TypeList);
                                                                     $$ = lst;
+                                                                    curLvar = NULL;
                                                                     }     
             | type _ID '(' paramlist ')' '{'  _BEGIN stmtList return  _END'}'   {
                                                                     Method* tmp = searchMethod($2, curClassMethod);
@@ -325,6 +352,7 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                     LinkedList *lst = (LinkedList*)malloc(sizeof(LinkedList));
                                                                     lst->data = createNode(METHOD, $2, -1, connect($8, $9), $4); ((tnode*)lst->data)->vartype = searchType($1, TypeList);
                                                                     $$ = lst;
+                                                                    curLvar = NULL;
                                                                     }                                                             
                                                                     
             ;
@@ -643,6 +671,7 @@ gdecl : type gvarlist _SEMI                             {
                                                                 ClassDef* class = searchClass($1, ClassList);
                                                                 if(type==NULL && class==NULL)
                                                                     yyerror("Undefined type");
+                                                                printf("%d\n", curMemory);
                                                                 *tmp = (GSymbol){.name=var->name, .type=type, .class=class, .size=var->size, .params=var->params, .binding=curMemory};
                                                                 if(class) curMemory++;
                                                                 GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
@@ -664,6 +693,7 @@ gvarlist : gvarlist _COMMA _ID                          {GVariable* tmp = (GVari
         | gvarlist _COMMA _ID '(' paramlist ')'         {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=$3, .params=$5, .size=0};
                                                          $$ = addNode(tmp, sizeof(GVariable), $1);
+                                                         curLvar = NULL;
                                                         }
 
         | _ID '[' _NUM ']'                              {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
@@ -679,6 +709,7 @@ gvarlist : gvarlist _COMMA _ID                          {GVariable* tmp = (GVari
         | _ID '(' paramlist ')'                         {GVariable* tmp = (GVariable*)malloc(sizeof(GVariable));
                                                          *tmp = (GVariable){.name=$1, .params=$3, .size=0, .isfunc=1};
                                                          $$ = addNode(tmp, sizeof(GVariable), NULL);
+                                                         curLvar = NULL;
                                                         }
         ;
 
@@ -728,11 +759,24 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
     ;
 
 paramlist : params                                      {curLvar = addParam($1); $$ = $1; 
+                                                        LinkedList* t = curLvar;
+                                                        while(t) {
+                                                            printf("%s\n", ((LSymbol*)t->data)->name);
+                                                            t = t->next;
+                                                        }
+                                                        
                                                         LSymbol* tmp = malloc(sizeof(LSymbol));
                                                         ClassDef *type = malloc(sizeof(ClassDef));;
                                                         *type = (ClassDef){.fields=curClassField, .methods=curClassMethod};
                                                         *tmp = (LSymbol){.name = "self", .class=type };
-                                                        curLvar = addNode(tmp, sizeof(LSymbol), curLvar);}
+                                                        curLvar = addNode(tmp, sizeof(LSymbol), curLvar);
+                                                        t = curLvar;
+                                                        while(t) {
+                                                            printf("%s\n", ((LSymbol*)t->data)->name);
+                                                            t = t->next;
+                                                        }
+                                                        printf("\n\n");
+                                                        }
           ;
 params : params _COMMA param                            { $$ = connect($3, $1);}
           | param                                       { $$ = $1;}

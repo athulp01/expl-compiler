@@ -10,7 +10,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/silc",
-            "args": ["./programs/test.expl"],
+            "args": ["./programs/test7.expl"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
