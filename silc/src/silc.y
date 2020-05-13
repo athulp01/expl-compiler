@@ -68,7 +68,7 @@
                 }
                 return field?field->type:sym->type; 
             } else {
-                printf("hete%s", sname);
+                printf("%s", sname);
                 yyerror("Undefined variable");
                 return NULL;
             }
@@ -219,12 +219,23 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                  curClassName = $2;
                                                                  class->idx = classno++;
                                                                  class->fields = curClassField;
+                                                                 int begin = 1;
+                                                                 LinkedList *f = class->fields;
+                                                                 while(f) {
+                                                                     ((Field*)f->data)->idx = begin++;
+                                                                     if(((Field*)f->data)->class) begin++;
+                                                                     f = f->next;
+                                                                 }
+                                                                 if(begin>8) yyerror("Maximum field size exceeded");
                                                                  class->methods = curClassMethod;
                                                                  LinkedList *mets = class->methods;
+                                                                 int nummethods = 0;
                                                                  while(mets) {
+                                                                     nummethods++;
                                                                     ((Method*)mets->data)->class = class;
                                                                     mets = mets->next;
                                                                  }
+                                                                 if(nummethods>8) yyerror("Maximum number of methods exceeded");
                                                                  LinkedList *func = $5;
                                                                  ClassList = addNode(class, sizeof(ClassDef), ClassList);
                                                                  tnode *tmp;
@@ -258,10 +269,11 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                  int begin = 1;
                                                                  LinkedList *f = class->fields;
                                                                  while(f) {
-                                                                     printf("%d ", ((Field*)f->data)->idx);
                                                                      ((Field*)f->data)->idx = begin++;
+                                                                     if(((Field*)f->data)->class) begin++;
                                                                      f = f->next;
                                                                  }
+                                                                 if(begin>8) yyerror("Maximum field size exceeded");
                                                                  class->parent = parent;
                                                                  int nummethods = 0;
                                                                  LinkedList *mtds = curClassMethod;
@@ -277,16 +289,19 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                      strcat(virtual, t);
                                                                     mtds = mtds->next;
                                                                   }
+                                                                  int numm = nummethods - 1;
                                                                  mtds = copyList(parent->methods, sizeof(Method));
                                                                  LinkedList* parentm = mtds;
                                                                  while(mtds) {
                                                                     Method* child = searchMethod(((Method*)mtds->data)->name, curClassMethod);
                                                                     if(child) {
-                                                                    ((Method*)mtds->data)->idx += child->idx;
-                                                                    mtds = mtds->next;
-                                                                    continue;
-                                                                      }
+                                                                        ((Method*)mtds->data)->idx += child->idx;
+                                                                        checkArg(child->params, ((Method*)mtds->data)->params);
+                                                                        mtds = mtds->next;
+                                                                        continue;
+                                                                    }
                                                                     ((Method*)mtds->data)->idx += nummethods-1;
+                                                                    numm++;
                                                                      char s[100];
                                                                      strcpy(s, ((Method*)mtds->data)->class->name);
                                                                      strcat(s, ".");
@@ -296,6 +311,7 @@ program : typedefblock classdefblock gdeclblock fdefblock mainblock
                                                                     strcat(virtual, t);
                                                                     mtds = mtds->next;
                                                                   }
+                                                                  if(numm>8) yyerror("Maximum method size exceeded");
                                                                  class->methods = connectList(curClassMethod, parentm, sizeof(Method));
                                                                  class->parent = parent;
                                                                  LinkedList *func = $6;
@@ -671,7 +687,6 @@ gdecl : type gvarlist _SEMI                             {
                                                                 ClassDef* class = searchClass($1, ClassList);
                                                                 if(type==NULL && class==NULL)
                                                                     yyerror("Undefined type");
-                                                                printf("%d\n", curMemory);
                                                                 *tmp = (GSymbol){.name=var->name, .type=type, .class=class, .size=var->size, .params=var->params, .binding=curMemory};
                                                                 if(class) curMemory++;
                                                                 GSymList = addNode(tmp, sizeof(GSymbol), GSymList);
@@ -760,22 +775,12 @@ fdef : type _ID '(' paramlist ')' '{'ldeclblock  _BEGIN stmtList return  _END'}'
 
 paramlist : params                                      {curLvar = addParam($1); $$ = $1; 
                                                         LinkedList* t = curLvar;
-                                                        while(t) {
-                                                            printf("%s\n", ((LSymbol*)t->data)->name);
-                                                            t = t->next;
-                                                        }
-                                                        
                                                         LSymbol* tmp = malloc(sizeof(LSymbol));
                                                         ClassDef *type = malloc(sizeof(ClassDef));;
                                                         *type = (ClassDef){.fields=curClassField, .methods=curClassMethod};
                                                         *tmp = (LSymbol){.name = "self", .class=type };
                                                         curLvar = addNode(tmp, sizeof(LSymbol), curLvar);
                                                         t = curLvar;
-                                                        while(t) {
-                                                            printf("%s\n", ((LSymbol*)t->data)->name);
-                                                            t = t->next;
-                                                        }
-                                                        printf("\n\n");
                                                         }
           ;
 params : params _COMMA param                            { $$ = connect($3, $1);}

@@ -82,8 +82,16 @@ tnode *createNode(enum TYPE type, char *s, int n, tnode *l, tnode *r) {
       if (!strcmp(l->vartype ? l->vartype->name : l->varclass->name, "int") ||
           !strcmp(l->vartype ? l->vartype->name : l->varclass->name, "str"))
         yyerror("Null can be only assigned to user defined type");
-    } 
-    
+    } else if (l->varclass && r->varclass) {
+      ClassDef *right = searchClass(r->varclass->name, ClassList);
+      while(right) {
+        if(!strcmp(r->varclass->name, l->varclass->name)) break;
+        right = right->parent;
+      }
+    }
+    else if(strcmp(l->vartype ? l->vartype->name : l->varclass->name,
+                      r->vartype ? r->vartype->name : r->varclass->name))
+      yyerror("Type mismatch");
     break;
   case READ:
     if (strcmp(l->vartype ? l->vartype->name : l->varclass->name, "int") &&
