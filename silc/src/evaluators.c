@@ -21,7 +21,6 @@ reg_index getAddress(tnode* root, Frame* frame, FILE* out) {
   if (sym) {  // local variable
     binding = sym->binding;
     reg_index mem = getReg(frame);
-    reg_index tmp = getReg(frame);
     fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", mem, mem, binding);
     int idx = 0;
     char* tok;
@@ -32,8 +31,8 @@ reg_index getAddress(tnode* root, Frame* frame, FILE* out) {
         field = getField(tok, lst);
         if (field)
           lst = field->type ? field->type->fields : field->class->fields;
-        fprintf(out, "MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,
-                mem, tmp, mem, idx);
+        fprintf(out, "MOV R%d, [R%d]\nADD R%d, %d\n", mem, mem,
+                mem, idx);
       }
     } else {
       LinkedList* lst = sym->type ? sym->type->fields : sym->class->fields;
@@ -42,18 +41,16 @@ reg_index getAddress(tnode* root, Frame* frame, FILE* out) {
         field = getField(tok, lst);
         if (field)
           lst = field->type ? field->type->fields : field->class->fields;
-        fprintf(out, "MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,
-                mem, tmp, mem, idx);
+        fprintf(out, "MOV R%d, [R%d]\nADD R%d, %d\n", mem, mem,
+                mem, idx);
       }
     }
-    freeReg(frame);
     return mem;
   } else {
     sym = searchSymbol(name, GSymList);
     if (sym) {  // global variable
       binding = sym->binding;
       reg_index mem = getReg(frame);
-      reg_index tmp = getReg(frame);
       int idx = 0;
       char* tok;
       fprintf(out, "MOV R%d, %d\n", mem, binding);
@@ -68,11 +65,10 @@ reg_index getAddress(tnode* root, Frame* frame, FILE* out) {
           if (field)
             lst = lst =
                 field->type ? field->type->fields : field->class->fields;
-          fprintf(out, "MOV R%d, [R%d]\nMOV R%d, R%d\nADD R%d, %d\n", tmp, mem,
-                  mem, tmp, mem, idx);
+          fprintf(out, "MOV R%d, [R%d]\nADD R%d, %d\n", mem, mem,
+                 mem, idx);
         }
       }
-      freeReg(frame);
       return mem;
     } else {
       printf("%s:", root->varname);
@@ -236,7 +232,8 @@ void eval_assgn(tnode* root, Frame* frame, FILE* out) {
     right = eval_new(root->right, frame, out);
     int idx = searchClass(root->right->varname, ClassList)->idx;
     reg_index vtp = getReg(frame);
-    fprintf(out, "MOV R%d, R%d\nADD R%d, 1\nMOV [R%d], %d\n", vtp, binding, vtp,
+    //Also add the virtual table pointer
+    fprintf(out, "MOV R%d, R%d\nADD R%d, 1\nMOV [R%d], %d\n", vtp, binding, vtp, 
             vtp, idx * 8 + 4096);
     freeReg(frame);
   } else if (root->right->varclass) {
@@ -247,6 +244,7 @@ void eval_assgn(tnode* root, Frame* frame, FILE* out) {
   if (root->right->varclass) {
     reg_index vtp = getReg(frame);
     reg_index rightvte = getReg(frame);
+    //replace the virutal table pointer
     fprintf(out, "MOV R%d, R%d\nADD R%d, 1\nMOV R%d, [R%d]\n", vtp, right, vtp,
             rightvte, vtp);
     fprintf(out, "MOV R%d, R%d\nADD R%d, 1\nMOV [R%d], R%d\n", vtp, binding,
@@ -254,6 +252,7 @@ void eval_assgn(tnode* root, Frame* frame, FILE* out) {
     freeReg(frame);
     fprintf(out, "MOV R%d, [R%d]\n", vtp, right);
     fprintf(out, "MOV [R%d], R%d\n", binding, vtp);
+    freeReg(frame);
     freeReg(frame);
     freeReg(frame);
     return;
@@ -341,8 +340,6 @@ reg_index call_method(tnode* root, Frame* frame, FILE* out) {
     if (field)
       lst = field->class->fields;
   }
-  char* callname = (char*)malloc(
-      sizeof(field ? field->class->name : sym->class->name) + 2 + sizeof(s));
   ClassDef* class =
       searchClass(field ? field->class->name : sym->class->name, ClassList);
   int reg = pushRegToStack(frame, out);
@@ -350,7 +347,7 @@ reg_index call_method(tnode* root, Frame* frame, FILE* out) {
   reg_index self = getAddress(root, frame, out);
   fprintf(out, "PUSH R%d\n", self);  // Push self pointer as an argument
   fprintf(out, "MOV R%d, %d\nPUSH R%d\n", self, class->idx * 8 + 4096,
-          self);  // Push self pointer as an argument
+          self);  // Push virtual table pointer as an argument
   freeReg(frame);
   reg_index tmp = getReg(frame);
   fprintf(out, "PUSH R%d\n", tmp);
@@ -366,10 +363,10 @@ reg_index call_method(tnode* root, Frame* frame, FILE* out) {
   reg_index vte = getReg(frame);
   fprintf(out, "ADD R%d, 1\nMOV R%d, [R%d]\n", addr, vte, addr);
   fprintf(out, "ADD R%d, %d\n", vte, searchMethod(prev, class->methods)->idx);
-  freeReg(frame);
-  freeReg(frame);
   fprintf(out, "MOV R%d, [R%d]\n", addr, vte);
   fprintf(out, "CALL R%d\n", addr);
+  freeReg(frame);
+  freeReg(frame);
   tmp = getReg(frame);
   fprintf(out, "POP R%d\n", tmp);
   popArgFromStack(root->left, frame, out);
@@ -454,12 +451,12 @@ void pushArgToStack(tnode* root, Frame* frame, FILE* out) {
     return;
   }
   if (root->type == FUNC) {
-    fprintf(out, "PUSH R%d \\arg\n", call_func(root, frame, out));
+    fprintf(out, "PUSH R%d\n", call_func(root, frame, out));
     freeReg(frame);
     return;
   }
   reg_index value = eval_expr(root, frame, out);
-  fprintf(out, "PUSH R%d \\arg\n", value);
+  fprintf(out, "PUSH R%d\n", value);
   freeReg(frame);
   return;
 }
@@ -488,7 +485,7 @@ void popArgFromStack(tnode* root, Frame* frame, FILE* out) {
     return;
   }
   reg_index value = getReg(frame);
-  fprintf(out, "POP R%d \\argu\n", value);
+  fprintf(out, "POP R%d\n", value);
   freeReg(frame);
   return;
 }
