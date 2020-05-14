@@ -1,5 +1,5 @@
 /*
-Contains all data structures and helper methods to 
+Contains all data structures and helper methods to
 create the abstract symbol treee
 */
 #pragma once
@@ -9,15 +9,17 @@ create the abstract symbol treee
 #ifdef DEBUG
 #define LOG(s1, s2) printf("DEBUG | %s : %s\n", s1, s2);
 #else
-#define LOG(s1, s2) if(0);
+#define LOG(s1, s2) \
+  if (0)            \
+    ;
 #endif
 
 /* -----------------Enums--------------*/
 
-//Register use status
+// Register use status
 enum STATUS { FREE, IN_USE, RESV };
 
-//Type of the AST node
+// Type of the AST node
 enum TYPE {
   CONST,
   READ,
@@ -40,7 +42,7 @@ enum TYPE {
   NEW,
 };
 
-//Deprecated! Use Type instead.
+// Deprecated! Use Type instead.
 enum VARTYPE { INT, BOOL, STRING };
 //--------------------------------------
 
@@ -48,7 +50,7 @@ enum VARTYPE { INT, BOOL, STRING };
 
 typedef short reg_index;
 
-//Generic linkedlist definition
+// Generic linkedlist definition
 typedef struct _LinkedList {
   void* data;
   struct _LinkedList* next;
@@ -75,18 +77,18 @@ typedef struct _Parameter {
 struct _GSymbol;
 struct _Type;
 struct _Classdef;
-//AST node
+// AST node
 typedef struct _tnode {
   enum TYPE type;
-  struct _Type *vartype;
-  struct _ClassDef *varclass;
+  struct _Type* vartype;
+  struct _ClassDef* varclass;
   char* varname;
-  struct _GSymbol* symbol;    //can also refer to local symbol by type casting
+  struct _GSymbol* symbol;  // can also refer to local symbol by type casting
   int val;
   struct _tnode *left, *right;  // left and right branches
 } tnode;
 
-//helper struct to create global symtable
+// helper struct to create global symtable
 typedef struct {
   char* name;
   int size;
@@ -94,105 +96,104 @@ typedef struct {
   int isfunc;
 } GVariable;
 
-//For storing user and inbuilt types
+// For storing user and inbuilt types
 typedef struct _Type {
-  char *name;
+  char* name;
   int size;
-  LinkedList *fields;
-}Type;
+  LinkedList* fields;
+} Type;
 
 union {
-  Type *a;
-}T;
+  Type* a;
+} T;
 
-//For storing class table
+// For storing class table
 typedef struct _ClassDef {
-  char *name;
-  LinkedList *fields;
-  LinkedList *methods;
-  struct _ClassDef *parent;
+  char* name;
+  LinkedList* fields;
+  LinkedList* methods;
+  struct _ClassDef* parent;
   unsigned int idx;
   int fieldCount;
   int methodCount;
 } ClassDef;
 
-//For storing fields of user defined types
+// For storing fields of user defined types
 typedef struct _Field {
-  char *name;
+  char* name;
   int idx;
-  struct _Type *type;
-  char *ndef;
-  ClassDef *class;   //Only for OExpl
-}Field;
+  struct _Type* type;
+  char* ndef;
+  ClassDef* class;  // Only for OExpl
+} Field;
 
 typedef struct _Method {
-  char *name;
-  Type *type;
-  tnode *params;
+  char* name;
+  Type* type;
+  tnode* params;
   int idx;
-  ClassDef *class;
-  Frame *frame;
-}Method;
+  ClassDef* class;
+  Frame* frame;
+} Method;
 
 // Structure for storing the global symbol table
 typedef struct _GSymbol {
   char* name;
-  Type *type;
+  Type* type;
   int size;
   int binding;
-  ClassDef *class;
+  ClassDef* class;
   tnode* params;
   Frame* frame;
 } GSymbol;
 
 // structure for storing the local symbol table
 typedef struct _LSymbol {
-  char* name;  
-  Type *type;
+  char* name;
+  Type* type;
   int size;
   int binding;
-  ClassDef *class;
+  ClassDef* class;
 } LSymbol;
 
 //---------------------------------------------
 
-extern LinkedList *GSymList, *LSymList, *TypeList, *ClassList, *curClassField, *curClassMethod;
-extern char *curClassName;
-//Last label used
+extern LinkedList *GSymList, *LSymList, *TypeList, *ClassList, *curClassField,
+    *curClassMethod;
+extern char* curClassName;
+// Last label used
 extern int label;
-
 
 //----------------Helper functions---------------------
 
 /*Create a node AST node*/
 tnode* createNode(enum TYPE type, char* s, int n, tnode* l, tnode* r);
-//connect two AST nodes
+// connect two AST nodes
 tnode* connect(tnode* first, tnode* second);
 
-
-//Merge two linkedlist
-LinkedList* connectList(LinkedList* first, LinkedList *second, size_t size);
-//Adds a node to a linkedlist
+// Merge two linkedlist
+LinkedList* connectList(LinkedList* first, LinkedList* second, size_t size);
+// Adds a node to a linkedlist
 LinkedList* addNode(void*, size_t, LinkedList*);
-//copy a linkedlist
+// copy a linkedlist
 LinkedList* copyList(LinkedList*, size_t);
 
-//search in the symbol table
+// search in the symbol table
 void* searchSymbol(char*, LinkedList*);
-//search in the type table
+// search in the type table
 Type* searchType(char*, LinkedList*);
-//search and return field index
+// search and return field index
 int searchField(char*, LinkedList*);
 //
 Method* searchMethod(char*, LinkedList*);
 Field* getField(char*, LinkedList*);
-//Search int the class table
+// Search int the class table
 ClassDef* searchClass(char*, LinkedList*);
 
-//create a label node (if time permits use generic addNode())
+// create a label node (if time permits use generic addNode())
 LabelList* createLlistNode(int, int, LabelList*);
 LabelList* deleteLlistNode(LabelList*);
-//Get a label from the labelstore
+// Get a label from the labelstore
 int getLabel();
 // Get a register
 reg_index getReg(Frame*);

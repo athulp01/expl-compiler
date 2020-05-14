@@ -6,7 +6,7 @@
     #include "datastructures.h"
 
 	int yylex(void);
-  char virtual[1000];
+    char virtual[1000];
     int yyerror(char*);
     int classno = 0, mid =0;
     FILE *out, *yyin;
@@ -181,6 +181,7 @@
 
 program : typedefblock classdefblock gdeclblock fdefblock mainblock
         | typedefblock classdefblock gdeclblock mainblock
+        | typedefblock gdeclblock fdefblock mainblock
         | gdeclblock fdefblock mainblock
         | typedefblock mainblock
         | gdeclblock mainblock
@@ -598,6 +599,7 @@ stmt : read                                             {$$ = $1;}
 
 stmtList : stmtList stmt                                {$$ = connect($1, $2);}
          | stmt                                         {$$ = $1;}
+         |                                              {$$ = NULL;}
          ;
 
 

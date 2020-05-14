@@ -1,33 +1,32 @@
 #include "../include/evaluators.h"
-
-#include "../include/datastructures.h"
-#include "string.h"
 #include <stdio.h>
+#include <string.h>
+#include "../include/datastructures.h"
 
-int yyerror(char *);
+int yyerror(char*);
 
 /* TODO: Implement type checking, array bound checking */
 
-LabelList *llist;
-LinkedList *GSymList;
+LabelList* llist;
+LinkedList* GSymList;
 
 /* Search local and global symbol table and returns the address
  */
-reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
+reg_index getAddress(tnode* root, Frame* frame, FILE* out) {
   int binding;
-  char *dup = strdup(root->varname);
-  char *name = strtok(dup, ".");
-  Field *field;
-  GSymbol *sym = searchSymbol(name, frame->Lvars);
-  if (sym) { // local variable
+  char* dup = strdup(root->varname);
+  char* name = strtok(dup, ".");
+  Field* field;
+  GSymbol* sym = searchSymbol(name, frame->Lvars);
+  if (sym) {  // local variable
     binding = sym->binding;
     reg_index mem = getReg(frame);
     reg_index tmp = getReg(frame);
     fprintf(out, "MOV R%d, BP\nADD R%d, %d\n", mem, mem, binding);
     int idx = 0;
-    char *tok;
+    char* tok;
     if (!strcmp(name, "self")) {
-      LinkedList *lst = curClassField;
+      LinkedList* lst = curClassField;
       while ((tok = strtok(NULL, "."))) {
         idx = searchField(tok, lst);
         field = getField(tok, lst);
@@ -37,7 +36,7 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
                 mem, tmp, mem, idx);
       }
     } else {
-      LinkedList *lst = sym->type ? sym->type->fields : sym->class->fields;
+      LinkedList* lst = sym->type ? sym->type->fields : sym->class->fields;
       while ((tok = strtok(NULL, "."))) {
         idx = searchField(tok, lst);
         field = getField(tok, lst);
@@ -51,18 +50,18 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
     return mem;
   } else {
     sym = searchSymbol(name, GSymList);
-    if (sym) { // global variable
+    if (sym) {  // global variable
       binding = sym->binding;
       reg_index mem = getReg(frame);
       reg_index tmp = getReg(frame);
       int idx = 0;
-      char *tok;
+      char* tok;
       fprintf(out, "MOV R%d, %d\n", mem, binding);
       if (root->type == VAR && root->left) {
         fprintf(out, "ADD R%d, R%d\n", mem, eval_expr(root->left, frame, out));
         freeReg(frame);
       } else {
-        LinkedList *lst = sym->type ? sym->type->fields : sym->class->fields;
+        LinkedList* lst = sym->type ? sym->type->fields : sym->class->fields;
         while ((tok = strtok(NULL, "."))) {
           idx = searchField(tok, lst);
           field = getField(tok, lst);
@@ -84,54 +83,54 @@ reg_index getAddress(tnode *root, Frame *frame, FILE *out) {
 }
 
 // Evaluates a tree by calling the respective functions according to node type
-void eval_tree(tnode *root, Frame *frame, FILE *out) {
+void eval_tree(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
     return;
   if (root->type == CONN)
     eval_tree(root->left, frame, out);
   switch (root->type) {
-  case FFREE:
-    eval_free(root, frame, out);
-    break;
-  case READ:
-    eval_read(root, frame, out);
-    break;
-  case WRITE:
-    eval_write(root, frame, out);
-    break;
-  case ASSN:
-    eval_assgn(root, frame, out);
-    return;
-  case IF:
-    eval_if(root, frame, out);
-    return;
-  case WHILE:
-    eval_while(root, frame, out);
-    return;
-  case BREAK:
-    eval_break(out);
-    break;
-  case CONT:
-    eval_cont(out);
-    break;
-  case RET:
-    eval_return(root, frame, out);
-    break;
-  case FUNC:
-    call_func(root, frame, out);
-    freeReg(frame);
-    break;
-  case METHOD:
-    call_method(root, frame, out);
-    freeReg(frame);
-    break;
+    case FFREE:
+      eval_free(root, frame, out);
+      break;
+    case READ:
+      eval_read(root, frame, out);
+      break;
+    case WRITE:
+      eval_write(root, frame, out);
+      break;
+    case ASSN:
+      eval_assgn(root, frame, out);
+      return;
+    case IF:
+      eval_if(root, frame, out);
+      return;
+    case WHILE:
+      eval_while(root, frame, out);
+      return;
+    case BREAK:
+      eval_break(out);
+      break;
+    case CONT:
+      eval_cont(out);
+      break;
+    case RET:
+      eval_return(root, frame, out);
+      break;
+    case FUNC:
+      call_func(root, frame, out);
+      freeReg(frame);
+      break;
+    case METHOD:
+      call_method(root, frame, out);
+      freeReg(frame);
+      break;
   }
   eval_tree(root->right, frame, out);
   return;
 }
 
 // Evaluates a expression and returns the register where the result is stord
-reg_index eval_expr(tnode *root, Frame *frame, FILE *out) {
+reg_index eval_expr(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
     return 0;
   reg_index cur = getReg(frame);
@@ -197,7 +196,7 @@ reg_index eval_expr(tnode *root, Frame *frame, FILE *out) {
   return left;
 }
 
-void eval_write(tnode *root, Frame *frame, FILE *out) {
+void eval_write(tnode* root, Frame* frame, FILE* out) {
   int reg = pushRegToStack(frame, out);
   reg_index tmp = getReg(frame);
   reg_index writereg = eval_expr(root->left, frame, out);
@@ -211,7 +210,7 @@ void eval_write(tnode *root, Frame *frame, FILE *out) {
   getRegFromStack(frame, out, reg);
 }
 
-void eval_read(tnode *root, Frame *frame, FILE *out) {
+void eval_read(tnode* root, Frame* frame, FILE* out) {
   int reg = pushRegToStack(frame, out);
   int binding;
   reg_index mem = getAddress(root->left, frame, out);
@@ -226,10 +225,10 @@ void eval_read(tnode *root, Frame *frame, FILE *out) {
   getRegFromStack(frame, out, reg);
 }
 
-void eval_assgn(tnode *root, Frame *frame, FILE *out) {
-  LSymbol *sym = (LSymbol *)searchSymbol(root->left->varname, frame->Lvars);
+void eval_assgn(tnode* root, Frame* frame, FILE* out) {
+  LSymbol* sym = (LSymbol*)searchSymbol(root->left->varname, frame->Lvars);
   if (!sym)
-    sym = (LSymbol *)searchSymbol(root->left->varname, GSymList);
+    sym = (LSymbol*)searchSymbol(root->left->varname, GSymList);
   reg_index binding = getAddress(root->left, frame, out), right;
   if (root->right->type == ALLOC) {
     right = eval_alloc(4, frame, out);
@@ -264,7 +263,7 @@ void eval_assgn(tnode *root, Frame *frame, FILE *out) {
   freeReg(frame);
 }
 
-void eval_if(tnode *root, Frame *frame, FILE *out) {
+void eval_if(tnode* root, Frame* frame, FILE* out) {
   reg_index res = eval_expr(root->left, frame, out);
   if (root->right->right) {
     int start = getLabel(), end = getLabel();
@@ -284,7 +283,7 @@ void eval_if(tnode *root, Frame *frame, FILE *out) {
   }
 }
 
-void eval_while(tnode *root, Frame *frame, FILE *out) {
+void eval_while(tnode* root, Frame* frame, FILE* out) {
   int loop_start = getLabel(), loop_end = getLabel();
   llist = createLlistNode(loop_start, loop_end, llist);
   fprintf(out, "L%d:\n", loop_start);
@@ -297,21 +296,21 @@ void eval_while(tnode *root, Frame *frame, FILE *out) {
   llist = deleteLlistNode(llist);
 }
 
-void eval_break(FILE *out) {
+void eval_break(FILE* out) {
   if (llist) {
     fprintf(out, "JMP L%d\n", llist->end_label);
     deleteLlistNode(llist);
   }
 }
 
-void eval_cont(FILE *out) {
+void eval_cont(FILE* out) {
   if (llist) {
     fprintf(out, "JMP L%d\n", llist->start_label);
     deleteLlistNode(llist);
   }
 }
 
-reg_index call_func(tnode *root, Frame *frame, FILE *out) {
+reg_index call_func(tnode* root, Frame* frame, FILE* out) {
   int reg = pushRegToStack(frame, out);
   pushArgToStack(root->left, frame, out);
   reg_index tmp = getReg(frame);
@@ -327,31 +326,31 @@ reg_index call_func(tnode *root, Frame *frame, FILE *out) {
   return tmp;
 }
 
-reg_index call_method(tnode *root, Frame *frame, FILE *out) {
-  char *dup = strdup(root->varname);
-  char *s = strtok(dup, ".");
-  char *prev;
-  GSymbol *sym = (GSymbol *)searchSymbol(s, GSymList);
+reg_index call_method(tnode* root, Frame* frame, FILE* out) {
+  char* dup = strdup(root->varname);
+  char* s = strtok(dup, ".");
+  char* prev;
+  GSymbol* sym = (GSymbol*)searchSymbol(s, GSymList);
   if (!sym)
-    sym = (GSymbol *)searchSymbol(s, frame->Lvars);
+    sym = (GSymbol*)searchSymbol(s, frame->Lvars);
   LinkedList *lst = sym->class->fields, *plst = NULL;
-  Field *field = NULL;
+  Field* field = NULL;
   while ((s = strtok(NULL, "."))) {
     prev = strdup(s);
     field = getField(s, lst) ? getField(s, lst) : field;
     if (field)
       lst = field->class->fields;
   }
-  char *callname = (char *)malloc(
+  char* callname = (char*)malloc(
       sizeof(field ? field->class->name : sym->class->name) + 2 + sizeof(s));
-  ClassDef *class =
+  ClassDef* class =
       searchClass(field ? field->class->name : sym->class->name, ClassList);
   int reg = pushRegToStack(frame, out);
   pushArgToStack(root->left, frame, out);
   reg_index self = getAddress(root, frame, out);
-  fprintf(out, "PUSH R%d\n", self); // Push self pointer as an argument
+  fprintf(out, "PUSH R%d\n", self);  // Push self pointer as an argument
   fprintf(out, "MOV R%d, %d\nPUSH R%d\n", self, class->idx * 8 + 4096,
-          self); // Push self pointer as an argument
+          self);  // Push self pointer as an argument
   freeReg(frame);
   reg_index tmp = getReg(frame);
   fprintf(out, "PUSH R%d\n", tmp);
@@ -361,7 +360,7 @@ reg_index call_method(tnode *root, Frame *frame, FILE *out) {
     if (root->varname[i] == '.')
       break;
   }
-  char *ff = strndup(root->varname, i);
+  char* ff = strndup(root->varname, i);
   tnode tde = {.varname = ff};
   reg_index addr = getAddress(&tde, frame, out);
   reg_index vte = getReg(frame);
@@ -384,25 +383,25 @@ reg_index call_method(tnode *root, Frame *frame, FILE *out) {
   return tmp;
 }
 
-void eval_func(tnode *root, FILE *out) {
+void eval_func(tnode* root, FILE* out) {
   // create a frame for the function
-  GSymbol *sym = (GSymbol *)searchSymbol(root->varname, GSymList);
-  Frame *frame = (Frame *)malloc(sizeof(Frame));
+  GSymbol* sym = (GSymbol*)searchSymbol(root->varname, GSymList);
+  Frame* frame = (Frame*)malloc(sizeof(Frame));
   frame->Lvars = copyList(sym->frame->Lvars, sizeof(LSymbol));
 
   /* PUSH the current base pointer and set it as the current stack pointer */
   fprintf(out, "PUSH BP\nMOV BP, SP\n");
   // create a space for local variables in the stack and set the binding
-  LinkedList *list = frame->Lvars;
+  LinkedList* list = frame->Lvars;
   int count = 1;
   reg_index tmp = getReg(frame);
   while (list) {
-    ((LSymbol *)list->data)->binding = count++;
-    if (((LSymbol *)list->data)->class) {
-      fprintf(out, "PUSH R%d\n", tmp); // push a free space for the variable
+    ((LSymbol*)list->data)->binding = count++;
+    if (((LSymbol*)list->data)->class) {
+      fprintf(out, "PUSH R%d\n", tmp);  // push a free space for the variable
       count++;
     }
-    fprintf(out, "PUSH R%d\n", tmp); // push a free space for the variable
+    fprintf(out, "PUSH R%d\n", tmp);  // push a free space for the variable
     list = list->next;
   }
   freeReg(frame);
@@ -410,33 +409,33 @@ void eval_func(tnode *root, FILE *out) {
   eval_tree(root->left, frame, out);
 }
 
-void eval_method(tnode *root, LinkedList *methods, FILE *out) {
+void eval_method(tnode* root, LinkedList* methods, FILE* out) {
   // create a frame for the function
-  Method *method = searchMethod(root->varname, methods);
-  Frame *frame = (Frame *)malloc(sizeof(Frame));
+  Method* method = searchMethod(root->varname, methods);
+  Frame* frame = (Frame*)malloc(sizeof(Frame));
   frame->Lvars = copyList(method->frame->Lvars, sizeof(LSymbol));
 
   /* PUSH the current base pointer and set it as the current stack pointer */
   fprintf(out, "PUSH BP\nMOV BP, SP\n");
   // create a space for local variables in the stack and set the binding
-  LinkedList *list = frame->Lvars;
+  LinkedList* list = frame->Lvars;
   int count = 1;
   reg_index tmp = getReg(frame);
   while (list) {
-    ((LSymbol *)list->data)->binding = count++;
-    if (((LSymbol *)list->data)->class) {
-      fprintf(out, "PUSH R%d\n", tmp); // push a free space for the variable
+    ((LSymbol*)list->data)->binding = count++;
+    if (((LSymbol*)list->data)->class) {
+      fprintf(out, "PUSH R%d\n", tmp);  // push a free space for the variable
       count++;
     }
     fprintf(out, "PUSH R%d\n",
-            tmp); // push a free space for the variable
+            tmp);  // push a free space for the variable
     list = list->next;
   }
   freeReg(frame);
-  ClassDef *type = malloc(sizeof(ClassDef));
+  ClassDef* type = malloc(sizeof(ClassDef));
   ;
   *type = (ClassDef){.fields = curClassField, .methods = curClassMethod};
-  LSymbol *var = (LSymbol *)malloc(sizeof(LSymbol));
+  LSymbol* var = (LSymbol*)malloc(sizeof(LSymbol));
   *var = (LSymbol){.name = "self",
                    .class = searchClass(curClassName, ClassList),
                    .size = 1,
@@ -446,7 +445,7 @@ void eval_method(tnode *root, LinkedList *methods, FILE *out) {
   eval_tree(root->left, frame, out);
 }
 // Do a inorder traversal and set the binding of the function arguments
-void pushArgToStack(tnode *root, Frame *frame, FILE *out) {
+void pushArgToStack(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
     return;
   if (root->type == CONN) {
@@ -465,12 +464,12 @@ void pushArgToStack(tnode *root, Frame *frame, FILE *out) {
   return;
 }
 
-int addArgSymbol(tnode *root, Frame *frame, int mem, FILE *out) {
+int addArgSymbol(tnode* root, Frame* frame, int mem, FILE* out) {
   if (root == NULL)
     return mem;
   int left = addArgSymbol(root->right, frame, mem, out);
   if (root->type != CONN) {
-    LSymbol *tmp = malloc(sizeof(LSymbol));
+    LSymbol* tmp = malloc(sizeof(LSymbol));
     *tmp = (LSymbol){
         .name = root->varname, .type = root->vartype, .binding = left--};
     frame->Lvars = addNode(tmp, sizeof(LSymbol), frame->Lvars);
@@ -480,7 +479,7 @@ int addArgSymbol(tnode *root, Frame *frame, int mem, FILE *out) {
 }
 
 // pop all the arg from the stack
-void popArgFromStack(tnode *root, Frame *frame, FILE *out) {
+void popArgFromStack(tnode* root, Frame* frame, FILE* out) {
   if (root == NULL)
     return;
   if (root->type == CONN) {
@@ -494,15 +493,15 @@ void popArgFromStack(tnode *root, Frame *frame, FILE *out) {
   return;
 }
 
-void eval_return(tnode *root, Frame *frame, FILE *out) {
+void eval_return(tnode* root, Frame* frame, FILE* out) {
   reg_index result = eval_expr(root->left, frame, out);
   reg_index tmp = getReg(frame);
   fprintf(out, "MOV R%d, BP\nADD R%d, -2\nMOV [R%d], R%d\n", tmp, tmp, tmp,
           result);
   freeReg(frame);
-  LinkedList *list = frame->Lvars;
+  LinkedList* list = frame->Lvars;
   while (list) {
-    if (((LSymbol *)list->data)->binding >= 0)
+    if (((LSymbol*)list->data)->binding >= 0)
       fprintf(out, "POP R%d\n", tmp);
     list = list->next;
   }
@@ -512,7 +511,7 @@ void eval_return(tnode *root, Frame *frame, FILE *out) {
 
 /* Initialize the heap
  * */
-void eval_init(Frame *frame, FILE *out) {
+void eval_init(Frame* frame, FILE* out) {
   int reg = pushRegToStack(frame, out);
   reg_index init = getReg(frame);
   fprintf(out, "MOV R%d, \"Heapset\"\nPUSH R%d\nPUSH R%d\nPUSH R%d\n", init,
@@ -526,7 +525,7 @@ void eval_init(Frame *frame, FILE *out) {
 
 /* Allocate a block of size 8 regardless of the size parameter
  */
-reg_index eval_alloc(int size, Frame *frame, FILE *out) {
+reg_index eval_alloc(int size, Frame* frame, FILE* out) {
   int reg = pushRegToStack(frame, out);
   reg_index addr = getReg(frame);
   reg_index init = getReg(frame);
@@ -545,13 +544,13 @@ reg_index eval_alloc(int size, Frame *frame, FILE *out) {
   return addr;
 }
 
-reg_index eval_new(tnode *root, Frame *frame, FILE *out) {
+reg_index eval_new(tnode* root, Frame* frame, FILE* out) {
   return eval_alloc(4, frame, out);
 }
 
 /* Release the block of size 8
  */
-void eval_free(tnode *root, Frame *frame, FILE *out) {
+void eval_free(tnode* root, Frame* frame, FILE* out) {
   int reg = pushRegToStack(frame, out);
   reg_index mem = getAddress(root->left, frame, out);
   reg_index addr = getReg(frame), tmp = getReg(frame);
