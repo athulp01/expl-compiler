@@ -124,7 +124,6 @@
         LinkedList *res = NULL;
         if(root->type != CONN) {
             res = (LinkedList*)malloc(sizeof(LinkedList));
-            // printf("%s %s\n", root->vartype->name, root->varname);
             LSymbol* tmp = malloc(sizeof(LSymbol));
             *tmp = (LSymbol){.name = root->varname, .type = root->vartype};
             res->data = (void*)tmp;
@@ -134,11 +133,6 @@
             LinkedList *right = addParam(root->right);
             LinkedList *left = addParam(root->left);
             return connectList(right, left, sizeof(LSymbol));
-            // if(right) {
-            //     right->next = left;
-            //     return right;
-            // }
-            // return left;
         }
 
     }
